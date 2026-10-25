@@ -455,6 +455,31 @@ function setRecipeSaveMessage(message, type) {
   recipeSaveMessage.classList.toggle("is-error", type === "error");
 }
 
+function resetCalculatorForNewRecipe() {
+  cakeNameInput.value = "";
+  ingredients = [];
+  costLines = Object.fromEntries(COST_CATEGORY_KEYS.map((category) => [category, []]));
+  ingredientForm.reset();
+  document.querySelectorAll("[data-cost-form]").forEach((form) => form.reset());
+  laborHoursInput.value = "";
+  laborHourlyRateInput.value = "";
+  laborPercentageInput.value = "";
+  document.querySelector("[name='labor-mode'][value='hours']").checked = true;
+  profitPercentageInput.value = "30";
+  ingredientError.textContent = "";
+  laborError.textContent = "";
+  profitError.textContent = "";
+  document.querySelectorAll("[data-form-error]").forEach((message) => {
+    message.textContent = "";
+  });
+  calculationCurrency = selectedCurrency;
+  nextIngredientId = 1;
+  nextCostLineId = 1;
+  editingRecipeId = null;
+  renderCurrency();
+  saveDraft();
+}
+
 function saveRecipe() {
   const name = cakeNameInput.value.trim();
   if (!name) {
@@ -487,9 +512,9 @@ function saveRecipe() {
     }
     localStorage.setItem(RECIPES_STORAGE_KEY, JSON.stringify(nextRecipes));
     recipes = nextRecipes;
-    editingRecipeId = recipe.id;
-    setRecipeSaveMessage("Receta guardada en este navegador.", "success");
     recipeStorageMessage.textContent = "";
+    resetCalculatorForNewRecipe();
+    setRecipeSaveMessage("Receta guardada en este navegador. El formulario está listo para una receta nueva.", "success");
   } catch (error) {
     const message = error instanceof DOMException && error.name === "QuotaExceededError"
       ? "No hay espacio disponible para guardar la receta. Libera espacio del navegador e inténtalo de nuevo."
