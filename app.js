@@ -19,6 +19,7 @@ const RATE_STORAGE_KEY = "dulceprecio-usd-to-dop-rate";
 const DRAFT_STORAGE_KEY = "dulceprecio-current-calculation";
 const RECIPES_STORAGE_KEY = "dulceprecio-recipes";
 const INGREDIENTS_STORAGE_KEY = "dulceprecio-ingredients";
+const HISTORY_STORAGE_KEY = "dulceprecio-history";
 const currencyButtons = document.querySelectorAll("[data-currency]");
 const sampleCost = document.querySelector("#sample-cost");
 const samplePrice = document.querySelector("#sample-price");
@@ -33,6 +34,13 @@ const calculatorView = document.querySelector("#calculator-view");
 const recipesView = document.querySelector("#recipes-view");
 const recipeList = document.querySelector("#recipe-list");
 const recipesEmpty = document.querySelector("#recipes-empty");
+const historyView = document.querySelector("#history-view");
+const historyList = document.querySelector("#history-list");
+const historyEmpty = document.querySelector("#history-empty");
+const historyStorageMessage = document.querySelector("#history-storage-message");
+const historySaveMessage = document.querySelector("#history-save-message");
+const saveHistoryButton = document.querySelector("#save-history");
+const historyBackHomeButton = document.querySelector("#history-back-home");
 const recipeStorageMessage = document.querySelector("#recipe-storage-message");
 const recipeSaveMessage = document.querySelector("#recipe-save-message");
 const saveRecipeButton = document.querySelector("#save-recipe");
@@ -117,6 +125,8 @@ let costLines = Object.fromEntries(COST_CATEGORY_KEYS.map((category) => [categor
 let recipes = [];
 let editingRecipeId = null;
 let recipesStorageReady = true;
+let historyRecords = [];
+let historyStorageReady = true;
 let savedIngredients = [];
 let ingredientsStorageReady = true;
 let editingIngredientId = null;
@@ -257,7 +267,7 @@ function getCategoryTotals() {
   return totals;
 }
 
-function createRecipeSnapshot() {
+function createCalculationSnapshot() {
   const totals = getCategoryTotals();
   const percentage = Number(profitPercentageInput.value);
   const productionCost = roundMoney(
@@ -269,7 +279,7 @@ function createRecipeSnapshot() {
 
   if (laborError.textContent || profitError.textContent || !Number.isFinite(percentage) || percentage < 0
     || !Number.isFinite(profit) || !Number.isFinite(salePrice)) {
-    throw new Error("Corrige los datos de mano de obra y ganancia antes de guardar la receta.");
+    throw new Error("Corrige los datos de mano de obra y ganancia antes de guardar.");
   }
 
   return {
@@ -450,6 +460,52 @@ function renderRecipes() {
   });
 }
 
+function isHistoryRecord(record) {
+  return isRecipeRecord(record) && Number.isFinite(new Date(record.savedAt).getTime());
+}
+
+function renderHistory() {
+  historyList.replaceChildren();
+  const validRecords = historyRecords.filter(isHistoryRecord)
+    .sort((left, right) => new Date(right.savedAt).getTime() - new Date(left.savedAt).getTime());
+  historyEmpty.hidden = validRecords.length > 0;
+
+  validRecords.forEach((record) => {
+    const currency = CURRENCIES[record.currency];
+    const item = document.createElement("li");
+    item.className = "recipe-card history-card";
+    const heading = document.createElement("div");
+    heading.className = "recipe-card-heading";
+    const name = document.createElement("h2");
+    name.textContent = record.name || "Cálculo sin nombre";
+    const savedDate = document.createElement("time");
+    savedDate.dateTime = record.savedAt;
+    savedDate.textContent = new Intl.DateTimeFormat("es-DO", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(new Date(record.savedAt));
+    heading.append(name, savedDate);
+
+    const metadata = document.createElement("p");
+    metadata.className = "recipe-card-metadata";
+    metadata.textContent = `${currency.code} · Costo: ${formatMoney(record.totals.productionCost, currency)} · Ganancia: ${formatMoney(record.totals.profit, currency)} (${record.profitPercentage}%) · Venta: ${formatMoney(record.totals.salePrice, currency)}`;
+
+    const actions = document.createElement("div");
+    actions.className = "recipe-card-actions";
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.className = "recipe-delete-button";
+    deleteButton.textContent = "Eliminar";
+    deleteButton.addEventListener("click", () => deleteHistoryRecord(record));
+    actions.append(deleteButton);
+
+    item.append(heading, metadata);
+    renderRecipeDetails(record, item);
+    item.append(actions);
+    historyList.append(item);
+  });
+}
+
 function isSavedIngredient(item) {
   return item && typeof item.id === "string"
     && typeof item.name === "string"
@@ -500,6 +556,7 @@ function openIngredientsInventory() {
   });
   calculatorView.hidden = true;
   recipesView.hidden = true;
+  historyView.hidden = true;
   inventoryView.hidden = false;
   document.querySelector("main").classList.remove("is-calculating");
   renderIngredientsInventory();
@@ -634,9 +691,23 @@ function openRecipes() {
     section.hidden = true;
   });
   calculatorView.hidden = true;
+  historyView.hidden = true;
   recipesView.hidden = false;
   document.querySelector("main").classList.remove("is-calculating");
   renderRecipes();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function openHistory() {
+  homeSections.forEach((section) => {
+    section.hidden = true;
+  });
+  calculatorView.hidden = true;
+  recipesView.hidden = true;
+  inventoryView.hidden = true;
+  historyView.hidden = false;
+  document.querySelector("main").classList.remove("is-calculating");
+  renderHistory();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -646,6 +717,90 @@ function createRecipeId() {
     id = `recipe-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   } while (recipes.some((recipe) => recipe && recipe.id === id));
   return id;
+}
+
+function createHistoryId() {
+  let id;
+  do {
+    id = `calculation-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  } while (historyRecords.some((record) => record && record.id === id));
+  return id;
+}
+
+function setHistorySaveMessage(message, type) {
+  historySaveMessage.textContent = message;
+  historySaveMessage.classList.toggle("is-success", type === "success");
+  historySaveMessage.classList.toggle("is-error", type === "error");
+}
+
+function hasUnsubmittedCalculationValues() {
+  const ingredientValues = [...ingredientForm.elements]
+    .filter((field) => field instanceof HTMLInputElement
+      && !field.closest("[hidden]") && field.value.trim() !== "");
+  const categoryValues = [...document.querySelectorAll("[data-cost-form] input")]
+    .some((field) => field.value.trim() !== "");
+  const formHasErrors = [...document.querySelectorAll("[data-form-error]")]
+    .some((message) => message.textContent.trim() !== "");
+  return ingredientValues.length > 0 || categoryValues || formHasErrors;
+}
+
+function saveHistoryRecord() {
+  if (!historyStorageReady) {
+    setHistorySaveMessage(
+      "No se guardó el cálculo porque no se pudo leer el Historial existente. Tus datos actuales siguen intactos.",
+      "error",
+    );
+    return;
+  }
+  if (!hasCalculationEntries()) {
+    setHistorySaveMessage("Agrega al menos un costo o dato de mano de obra antes de guardar el cálculo.", "error");
+    return;
+  }
+  if (hasUnsubmittedCalculationValues()) {
+    setHistorySaveMessage("Completa y agrega las partidas pendientes, o borra sus campos, antes de guardar en Historial.", "error");
+    return;
+  }
+
+  try {
+    const snapshot = createCalculationSnapshot();
+    const record = {
+      ...snapshot,
+      id: createHistoryId(),
+      savedAt: new Date().toISOString(),
+    };
+    const nextHistory = [...historyRecords, record];
+    localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(nextHistory));
+    historyRecords = nextHistory;
+    historyStorageMessage.textContent = "";
+    setHistorySaveMessage("Cálculo guardado en Historial.", "success");
+  } catch (error) {
+    const message = error instanceof DOMException && error.name === "QuotaExceededError"
+      ? "No hay espacio disponible para guardar el cálculo. Libera espacio del navegador e inténtalo de nuevo."
+      : error instanceof Error && error.message.startsWith("Corrige")
+        ? error.message
+        : "No se pudo guardar el cálculo. Comprueba el almacenamiento del navegador e inténtalo de nuevo.";
+    setHistorySaveMessage(message, "error");
+  }
+}
+
+function deleteHistoryRecord(record) {
+  if (!historyStorageReady) {
+    historyStorageMessage.textContent = "No se pueden eliminar cálculos porque no fue posible leer el Historial existente.";
+    return;
+  }
+  if (!window.confirm(`¿Quieres eliminar el cálculo «${record.name || "Cálculo sin nombre"}»? Esta acción no se puede deshacer.`)) {
+    return;
+  }
+
+  try {
+    const nextHistory = historyRecords.filter((item) => item.id !== record.id);
+    localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(nextHistory));
+    historyRecords = nextHistory;
+    historyStorageMessage.textContent = "";
+    renderHistory();
+  } catch {
+    historyStorageMessage.textContent = "No se pudo eliminar el cálculo. Comprueba el almacenamiento del navegador e inténtalo de nuevo.";
+  }
 }
 
 function setRecipeSaveMessage(message, type) {
@@ -697,7 +852,7 @@ function saveRecipe() {
 
   let recipeWasPersisted = false;
   try {
-    const snapshot = createRecipeSnapshot();
+    const snapshot = createCalculationSnapshot();
     const existingIndex = recipes.findIndex((recipe) => recipe.id === editingRecipeId);
     const recipe = {
       ...snapshot,
@@ -1078,6 +1233,7 @@ function openCalculator(preserveRecipe = false) {
   });
   inventoryView.hidden = true;
   recipesView.hidden = true;
+  historyView.hidden = true;
   calculatorView.hidden = false;
   document.querySelector("main").classList.add("is-calculating");
   renderCalculator();
@@ -1088,6 +1244,7 @@ function openCalculator(preserveRecipe = false) {
 function returnHome() {
   calculatorView.hidden = true;
   recipesView.hidden = true;
+  historyView.hidden = true;
   inventoryView.hidden = true;
   homeSections.forEach((section) => {
     section.hidden = false;
@@ -1129,6 +1286,24 @@ try {
 }
 
 try {
+  const savedHistory = localStorage.getItem(HISTORY_STORAGE_KEY);
+  if (savedHistory) {
+    const parsedHistory = JSON.parse(savedHistory);
+    if (!Array.isArray(parsedHistory)) {
+      throw new Error("El contenido guardado no tiene el formato esperado.");
+    }
+    historyRecords = parsedHistory;
+    if (!historyRecords.every(isHistoryRecord)) {
+      historyStorageReady = false;
+      historyStorageMessage.textContent = "Hay datos de Historial que no se pudieron validar. No se guardarán ni eliminarán registros para evitar perder información.";
+    }
+  }
+} catch {
+  historyStorageReady = false;
+  historyStorageMessage.textContent = "No se pudo leer el Historial guardado. No se guardarán ni eliminarán registros para evitar sobrescribir tus datos existentes.";
+}
+
+try {
   const savedInventory = localStorage.getItem(INGREDIENTS_STORAGE_KEY);
   if (savedInventory) {
     const parsedInventory = JSON.parse(savedInventory);
@@ -1144,6 +1319,7 @@ try {
 
 renderCurrency();
 renderRecipes();
+renderHistory();
 renderIngredientsInventory();
 
 currencyButtons.forEach((button) => {
@@ -1350,9 +1526,11 @@ profitQuickButtons.forEach((button) => {
 
 backHomeButton.addEventListener("click", returnHome);
 recipesBackHomeButton.addEventListener("click", returnHome);
+historyBackHomeButton.addEventListener("click", returnHome);
 inventoryBackHomeButton.addEventListener("click", returnHome);
 recipesNewCalculationButton.addEventListener("click", () => openCalculator());
 saveRecipeButton.addEventListener("click", saveRecipe);
+saveHistoryButton.addEventListener("click", saveHistoryRecord);
 inventoryForm.addEventListener("submit", saveInventoryIngredient);
 inventoryCancelEditButton.addEventListener("click", () => {
   resetInventoryForm();
@@ -1393,7 +1571,7 @@ const featureDetails = {
   },
   historial: {
     title: "Historial",
-    description: "Más adelante podrás consultar tus cálculos anteriores y la moneda utilizada en cada uno.",
+    description: "Consulta los cálculos que guardaste manualmente y sus resultados en la moneda utilizada.",
   },
 };
 
@@ -1413,6 +1591,11 @@ document.querySelectorAll("[data-feature]").forEach((button) => {
 
     if (button.dataset.feature === "ingredientes") {
       openIngredientsInventory();
+      return;
+    }
+
+    if (button.dataset.feature === "historial") {
+      openHistory();
       return;
     }
 

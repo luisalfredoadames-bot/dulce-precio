@@ -1901,6 +1901,10 @@ main.is-calculating {
   display: none;
 }
 
+.history-view[hidden] {
+  display: none;
+}
+
 .ingredients-view[hidden] {
   display: none;
 }
@@ -1925,7 +1929,9 @@ main.is-calculating {
 }
 
 .recipe-storage-message,
-.recipe-save-message {
+.recipe-save-message,
+.history-storage-message,
+.history-save-message {
   min-height: 18px;
   margin: 8px 0 0;
   color: #a74430;
@@ -1939,6 +1945,15 @@ main.is-calculating {
 }
 
 .recipe-save-message.is-error {
+  color: #a74430;
+}
+
+.history-save-message.is-success {
+  color: var(--green-dark);
+  font-weight: 700;
+}
+
+.history-save-message.is-error {
   color: #a74430;
 }
 
@@ -2007,6 +2022,10 @@ main.is-calculating {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--white);
+}
+
+.history-card {
+  min-width: 0;
 }
 
 .recipe-card-heading {
@@ -2102,7 +2121,8 @@ main.is-calculating {
 .recipe-action-button:focus-visible,
 .recipe-delete-button:focus-visible,
 .recipes-new-button:focus-visible,
-.save-recipe-panel button:focus-visible {
+.save-recipe-panel button:focus-visible,
+.save-history-panel button:focus-visible {
   outline: 3px solid rgba(38, 116, 93, 0.35);
   outline-offset: 3px;
 }
@@ -2140,6 +2160,10 @@ main.is-calculating {
 }
 
 .save-recipe-panel .recipe-save-message {
+  max-width: 280px;
+}
+
+.save-history-panel .history-save-message {
   max-width: 280px;
 }
 

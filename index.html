@@ -157,6 +157,22 @@
           <p class="recipes-empty" id="recipes-empty">Todavía no tienes recetas guardadas. Abre un cálculo y pulsa «Guardar receta» para empezar.</p>
         </section>
 
+        <section class="history-view" id="history-view" aria-labelledby="history-title" hidden>
+          <button class="back-button" type="button" id="history-back-home">
+            <span aria-hidden="true">←</span> Volver al inicio
+          </button>
+          <div class="recipes-heading">
+            <div>
+              <p class="eyebrow section-eyebrow">Tus cálculos</p>
+              <h1 id="history-title">Historial</h1>
+              <p class="calculator-intro">Consulta los cálculos que guardaste, con sus costos y resultados.</p>
+            </div>
+          </div>
+          <p class="history-storage-message" id="history-storage-message" role="status" aria-live="polite"></p>
+          <ul class="history-list" id="history-list"></ul>
+          <p class="recipes-empty" id="history-empty">Todavía no tienes cálculos guardados. Desde la calculadora, pulsa «Guardar en historial».</p>
+        </section>
+
         <section class="ingredients-view" id="ingredients-view" aria-labelledby="inventory-title" hidden>
           <button class="back-button" type="button" id="inventory-back-home">
             <span aria-hidden="true">←</span> Volver al inicio
@@ -552,6 +568,17 @@
                 <span>Margen real sobre la venta</span>
                 <strong id="real-profit-margin">0%</strong>
               </div>
+            </div>
+          </section>
+
+          <section class="save-recipe-panel save-history-panel" aria-labelledby="save-history-title">
+            <div>
+              <h2 id="save-history-title">Guardar este cálculo</h2>
+              <p>Guarda una captura de los costos y resultados actuales en Historial, sin modificar tus recetas.</p>
+            </div>
+            <div>
+              <button class="dialog-done" type="button" id="save-history">Guardar en historial</button>
+              <p class="history-save-message" id="history-save-message" role="status" aria-live="polite"></p>
             </div>
           </section>
 
