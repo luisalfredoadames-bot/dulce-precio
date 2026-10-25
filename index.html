@@ -157,6 +157,69 @@
           <p class="recipes-empty" id="recipes-empty">Todavía no tienes recetas guardadas. Abre un cálculo y pulsa «Guardar receta» para empezar.</p>
         </section>
 
+        <section class="ingredients-view" id="ingredients-view" aria-labelledby="inventory-title" hidden>
+          <button class="back-button" type="button" id="inventory-back-home">
+            <span aria-hidden="true">←</span> Volver al inicio
+          </button>
+          <div class="recipes-heading">
+            <div>
+              <p class="eyebrow section-eyebrow">Tu inventario</p>
+              <h1 id="inventory-title">Mis ingredientes</h1>
+              <p class="calculator-intro">Guarda los precios y cantidades de tus paquetes para consultarlos en este navegador.</p>
+            </div>
+          </div>
+          <section class="inventory-form-panel" aria-labelledby="inventory-form-title">
+            <h2 id="inventory-form-title">Registrar ingrediente</h2>
+            <form id="inventory-form" novalidate>
+              <div class="inventory-form-grid">
+                <div>
+                  <label class="field-label" for="inventory-name">Nombre del ingrediente</label>
+                  <input class="text-input" id="inventory-name" name="name" type="text" autocomplete="off" placeholder="Ej. Harina" required />
+                </div>
+                <div>
+                  <label class="field-label" for="inventory-price">Precio del paquete</label>
+                  <input class="text-input" id="inventory-price" name="price" type="number" min="0" step="any" inputmode="decimal" placeholder="0.00" required />
+                </div>
+                <div>
+                  <label class="field-label" for="inventory-quantity">Cantidad del paquete</label>
+                  <input class="text-input" id="inventory-quantity" name="quantity" type="number" min="0" step="any" inputmode="decimal" placeholder="Ej. 1000" required />
+                </div>
+                <div>
+                  <label class="field-label" for="inventory-unit">Unidad de medida</label>
+                  <select class="text-input" id="inventory-unit" name="unit" required>
+                    <option value="">Selecciona una unidad</option>
+                    <option value="g">g</option>
+                    <option value="kg">kg</option>
+                    <option value="lb">lb</option>
+                    <option value="oz">oz</option>
+                    <option value="ml">ml</option>
+                    <option value="l">l</option>
+                    <option value="unidad">unidad</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="field-label" for="inventory-currency">Moneda del precio</label>
+                  <select class="text-input" id="inventory-currency" name="currency" required>
+                    <option value="DOP">DOP · RD$</option>
+                    <option value="USD">USD · US$</option>
+                  </select>
+                </div>
+              </div>
+              <p class="inventory-message" id="inventory-message" role="status" aria-live="polite"></p>
+              <div class="inventory-form-actions">
+                <button class="dialog-done" id="inventory-save" type="submit">Guardar ingrediente</button>
+                <button class="recipe-delete-button" id="inventory-cancel-edit" type="button" hidden>Cancelar edición</button>
+              </div>
+            </form>
+          </section>
+          <section class="inventory-list-section" aria-labelledby="inventory-list-title">
+            <h2 id="inventory-list-title">Ingredientes guardados</h2>
+            <p class="recipe-storage-message" id="inventory-storage-message" role="status" aria-live="polite"></p>
+            <ul class="recipe-list" id="inventory-list"></ul>
+            <p class="recipes-empty" id="inventory-empty">Todavía no tienes ingredientes guardados.</p>
+          </section>
+        </section>
+
         <section class="calculator-view" id="calculator-view" aria-labelledby="calculator-title" hidden>
           <button class="back-button" type="button" id="back-home">
             <span aria-hidden="true">←</span> Volver al inicio

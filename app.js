@@ -18,6 +18,7 @@ const CURRENCY_STORAGE_KEY = "dulceprecio-currency";
 const RATE_STORAGE_KEY = "dulceprecio-usd-to-dop-rate";
 const DRAFT_STORAGE_KEY = "dulceprecio-current-calculation";
 const RECIPES_STORAGE_KEY = "dulceprecio-recipes";
+const INGREDIENTS_STORAGE_KEY = "dulceprecio-ingredients";
 const currencyButtons = document.querySelectorAll("[data-currency]");
 const sampleCost = document.querySelector("#sample-cost");
 const samplePrice = document.querySelector("#sample-price");
@@ -37,6 +38,20 @@ const recipeSaveMessage = document.querySelector("#recipe-save-message");
 const saveRecipeButton = document.querySelector("#save-recipe");
 const recipesBackHomeButton = document.querySelector("#recipes-back-home");
 const recipesNewCalculationButton = document.querySelector("#recipes-new-calculation");
+const inventoryView = document.querySelector("#ingredients-view");
+const inventoryBackHomeButton = document.querySelector("#inventory-back-home");
+const inventoryForm = document.querySelector("#inventory-form");
+const inventoryNameInput = document.querySelector("#inventory-name");
+const inventoryPriceInput = document.querySelector("#inventory-price");
+const inventoryQuantityInput = document.querySelector("#inventory-quantity");
+const inventoryUnitInput = document.querySelector("#inventory-unit");
+const inventoryCurrencyInput = document.querySelector("#inventory-currency");
+const inventoryMessage = document.querySelector("#inventory-message");
+const inventoryStorageMessage = document.querySelector("#inventory-storage-message");
+const inventoryList = document.querySelector("#inventory-list");
+const inventoryEmpty = document.querySelector("#inventory-empty");
+const inventorySaveButton = document.querySelector("#inventory-save");
+const inventoryCancelEditButton = document.querySelector("#inventory-cancel-edit");
 const backHomeButton = document.querySelector("#back-home");
 const cakeNameInput = document.querySelector("#cake-name");
 const cakeNameDisplay = document.querySelector("#cake-name-display");
@@ -100,6 +115,9 @@ let costLines = Object.fromEntries(COST_CATEGORY_KEYS.map((category) => [categor
 let recipes = [];
 let editingRecipeId = null;
 let recipesStorageReady = true;
+let savedIngredients = [];
+let ingredientsStorageReady = true;
+let editingIngredientId = null;
 
 const UNITS = {
   g: { family: "weight", factor: 1, base: "g" },
@@ -428,6 +446,185 @@ function renderRecipes() {
     item.append(actions);
     recipeList.append(item);
   });
+}
+
+function isSavedIngredient(item) {
+  return item && typeof item.id === "string"
+    && typeof item.name === "string"
+    && Number.isFinite(item.price) && item.price >= 0
+    && Number.isFinite(item.quantity) && item.quantity > 0
+    && Object.prototype.hasOwnProperty.call(UNITS, item.unit)
+    && Object.prototype.hasOwnProperty.call(CURRENCIES, item.currency);
+}
+
+function renderIngredientsInventory() {
+  inventoryList.replaceChildren();
+  const validIngredients = savedIngredients.filter(isSavedIngredient);
+  inventoryEmpty.hidden = validIngredients.length > 0;
+
+  validIngredients.forEach((ingredient) => {
+    const currency = CURRENCIES[ingredient.currency];
+    const item = document.createElement("li");
+    item.className = "recipe-card";
+    const heading = document.createElement("div");
+    heading.className = "recipe-card-heading";
+    const name = document.createElement("h2");
+    name.textContent = ingredient.name;
+    const details = document.createElement("p");
+    details.className = "recipe-card-metadata";
+    details.textContent = `${formatMoney(ingredient.price, currency)} · ${ingredient.quantity} ${ingredient.unit} · ${currency.code}`;
+    heading.append(name);
+    const actions = document.createElement("div");
+    actions.className = "recipe-card-actions";
+    const editButton = document.createElement("button");
+    editButton.type = "button";
+    editButton.className = "recipe-action-button";
+    editButton.textContent = "Editar";
+    editButton.addEventListener("click", () => editSavedIngredient(ingredient));
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.className = "recipe-delete-button";
+    deleteButton.textContent = "Eliminar";
+    deleteButton.addEventListener("click", () => deleteSavedIngredient(ingredient));
+    actions.append(editButton, deleteButton);
+    item.append(heading, details, actions);
+    inventoryList.append(item);
+  });
+}
+
+function openIngredientsInventory() {
+  homeSections.forEach((section) => {
+    section.hidden = true;
+  });
+  calculatorView.hidden = true;
+  recipesView.hidden = true;
+  inventoryView.hidden = false;
+  document.querySelector("main").classList.remove("is-calculating");
+  renderIngredientsInventory();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function setInventoryMessage(message, isError = false) {
+  inventoryMessage.textContent = message;
+  inventoryMessage.classList.toggle("is-error", isError);
+  inventoryMessage.classList.toggle("is-success", Boolean(message) && !isError);
+}
+
+function resetInventoryForm() {
+  inventoryForm.reset();
+  inventoryCurrencyInput.value = selectedCurrency;
+  editingIngredientId = null;
+  inventorySaveButton.textContent = "Guardar ingrediente";
+  inventoryCancelEditButton.hidden = true;
+  setInventoryMessage("");
+}
+
+function editSavedIngredient(ingredient) {
+  if (!ingredientsStorageReady) {
+    inventoryStorageMessage.textContent = "No se puede editar mientras el inventario guardado no esté disponible.";
+    return;
+  }
+  editingIngredientId = ingredient.id;
+  inventoryNameInput.value = ingredient.name;
+  inventoryPriceInput.value = String(ingredient.price);
+  inventoryQuantityInput.value = String(ingredient.quantity);
+  inventoryUnitInput.value = ingredient.unit;
+  inventoryCurrencyInput.value = ingredient.currency;
+  inventorySaveButton.textContent = "Guardar cambios";
+  inventoryCancelEditButton.hidden = false;
+  setInventoryMessage("");
+  inventoryNameInput.focus();
+  inventoryForm.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function saveInventoryIngredient(event) {
+  event.preventDefault();
+  const name = inventoryNameInput.value.trim();
+  const price = Number(inventoryPriceInput.value);
+  const quantity = Number(inventoryQuantityInput.value);
+  const unit = inventoryUnitInput.value;
+  const currency = inventoryCurrencyInput.value;
+
+  if (!ingredientsStorageReady) {
+    setInventoryMessage("No se puede guardar porque no fue posible leer el inventario existente. No se modificarán tus datos.", true);
+    return;
+  }
+  if (!name) {
+    setInventoryMessage("Escribe el nombre del ingrediente.", true);
+    inventoryNameInput.focus();
+    return;
+  }
+  if (inventoryPriceInput.value === "" || !Number.isFinite(price) || price < 0) {
+    setInventoryMessage("Ingresa un precio de paquete válido, igual o mayor que cero.", true);
+    inventoryPriceInput.focus();
+    return;
+  }
+  if (inventoryQuantityInput.value === "" || !Number.isFinite(quantity) || quantity <= 0) {
+    setInventoryMessage("La cantidad del paquete debe ser mayor que cero.", true);
+    inventoryQuantityInput.focus();
+    return;
+  }
+  if (!Object.prototype.hasOwnProperty.call(UNITS, unit)) {
+    setInventoryMessage("Selecciona una unidad de medida válida.", true);
+    inventoryUnitInput.focus();
+    return;
+  }
+  if (!Object.prototype.hasOwnProperty.call(CURRENCIES, currency)) {
+    setInventoryMessage("Selecciona una moneda válida.", true);
+    inventoryCurrencyInput.focus();
+    return;
+  }
+
+  const existingIndex = savedIngredients.findIndex((ingredient) => ingredient.id === editingIngredientId);
+  const ingredient = {
+    id: existingIndex >= 0 ? editingIngredientId : `ingredient-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    name,
+    price,
+    quantity,
+    unit,
+    currency,
+  };
+  const nextIngredients = [...savedIngredients];
+  if (existingIndex >= 0) {
+    nextIngredients[existingIndex] = ingredient;
+  } else {
+    nextIngredients.push(ingredient);
+  }
+
+  try {
+    localStorage.setItem(INGREDIENTS_STORAGE_KEY, JSON.stringify(nextIngredients));
+    savedIngredients = nextIngredients;
+    resetInventoryForm();
+    setInventoryMessage(existingIndex >= 0 ? "Ingrediente actualizado." : "Ingrediente guardado.");
+    inventoryStorageMessage.textContent = "";
+    renderIngredientsInventory();
+  } catch {
+    setInventoryMessage("No se pudo guardar el ingrediente. Comprueba el almacenamiento del navegador e inténtalo de nuevo.", true);
+  }
+}
+
+function deleteSavedIngredient(ingredient) {
+  if (!ingredientsStorageReady) {
+    inventoryStorageMessage.textContent = "No se pueden eliminar ingredientes porque no fue posible leer el inventario existente.";
+    return;
+  }
+  if (!window.confirm(`¿Quieres eliminar «${ingredient.name}» del inventario? Esta acción no se puede deshacer.`)) {
+    return;
+  }
+
+  const nextIngredients = savedIngredients.filter((item) => item.id !== ingredient.id);
+  try {
+    localStorage.setItem(INGREDIENTS_STORAGE_KEY, JSON.stringify(nextIngredients));
+    savedIngredients = nextIngredients;
+    if (editingIngredientId === ingredient.id) {
+      resetInventoryForm();
+    }
+    inventoryStorageMessage.textContent = "";
+    setInventoryMessage("Ingrediente eliminado.");
+    renderIngredientsInventory();
+  } catch {
+    inventoryStorageMessage.textContent = "No se pudo eliminar el ingrediente. Comprueba el almacenamiento del navegador e inténtalo de nuevo.";
+  }
 }
 
 function openRecipes() {
@@ -830,6 +1027,7 @@ function openCalculator(preserveRecipe = false) {
   homeSections.forEach((section) => {
     section.hidden = true;
   });
+  inventoryView.hidden = true;
   recipesView.hidden = true;
   calculatorView.hidden = false;
   document.querySelector("main").classList.add("is-calculating");
@@ -841,6 +1039,7 @@ function openCalculator(preserveRecipe = false) {
 function returnHome() {
   calculatorView.hidden = true;
   recipesView.hidden = true;
+  inventoryView.hidden = true;
   homeSections.forEach((section) => {
     section.hidden = false;
   });
@@ -880,8 +1079,23 @@ try {
   recipeStorageMessage.textContent = "No se pudieron leer las recetas guardadas. No guardes recetas nuevas hasta recuperar el almacenamiento para evitar sobrescribir los datos existentes.";
 }
 
+try {
+  const savedInventory = localStorage.getItem(INGREDIENTS_STORAGE_KEY);
+  if (savedInventory) {
+    const parsedInventory = JSON.parse(savedInventory);
+    if (!Array.isArray(parsedInventory)) {
+      throw new Error("El inventario guardado no tiene el formato esperado.");
+    }
+    savedIngredients = parsedInventory;
+  }
+} catch {
+  ingredientsStorageReady = false;
+  inventoryStorageMessage.textContent = "No se pudo leer el inventario guardado. No intentes guardar ni eliminar ingredientes para evitar sobrescribir los datos existentes.";
+}
+
 renderCurrency();
 renderRecipes();
+renderIngredientsInventory();
 
 currencyButtons.forEach((button) => {
   button.addEventListener("click", () => {
@@ -1084,8 +1298,13 @@ profitQuickButtons.forEach((button) => {
 
 backHomeButton.addEventListener("click", returnHome);
 recipesBackHomeButton.addEventListener("click", returnHome);
+inventoryBackHomeButton.addEventListener("click", returnHome);
 recipesNewCalculationButton.addEventListener("click", () => openCalculator());
 saveRecipeButton.addEventListener("click", saveRecipe);
+inventoryForm.addEventListener("submit", saveInventoryIngredient);
+inventoryCancelEditButton.addEventListener("click", () => {
+  resetInventoryForm();
+});
 
 rateForm.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -1137,6 +1356,11 @@ document.querySelectorAll("[data-feature]").forEach((button) => {
 
     if (button.dataset.feature === "recetas") {
       openRecipes();
+      return;
+    }
+
+    if (button.dataset.feature === "ingredientes") {
+      openIngredientsInventory();
       return;
     }
 
