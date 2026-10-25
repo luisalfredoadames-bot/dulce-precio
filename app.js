@@ -477,7 +477,7 @@ function resetCalculatorForNewRecipe() {
   nextCostLineId = 1;
   editingRecipeId = null;
   renderCurrency();
-  saveDraft();
+  localStorage.removeItem(DRAFT_STORAGE_KEY);
 }
 
 function saveRecipe() {
@@ -496,6 +496,7 @@ function saveRecipe() {
     return;
   }
 
+  let recipeWasPersisted = false;
   try {
     const snapshot = createRecipeSnapshot();
     const existingIndex = recipes.findIndex((recipe) => recipe.id === editingRecipeId);
@@ -511,11 +512,19 @@ function saveRecipe() {
       nextRecipes.push(recipe);
     }
     localStorage.setItem(RECIPES_STORAGE_KEY, JSON.stringify(nextRecipes));
+    recipeWasPersisted = true;
     recipes = nextRecipes;
     recipeStorageMessage.textContent = "";
     resetCalculatorForNewRecipe();
     setRecipeSaveMessage("Receta guardada en este navegador. El formulario está listo para una receta nueva.", "success");
   } catch (error) {
+    if (recipeWasPersisted) {
+      setRecipeSaveMessage(
+        "La receta se guardó y la calculadora está limpia, pero el navegador no pudo borrar el borrador anterior.",
+        "warning",
+      );
+      return;
+    }
     const message = error instanceof DOMException && error.name === "QuotaExceededError"
       ? "No hay espacio disponible para guardar la receta. Libera espacio del navegador e inténtalo de nuevo."
       : error instanceof Error && error.message.startsWith("Corrige")
