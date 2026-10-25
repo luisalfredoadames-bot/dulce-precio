@@ -449,18 +449,29 @@ function createRecipeId() {
   return id;
 }
 
+function setRecipeSaveMessage(message, type) {
+  recipeSaveMessage.textContent = message;
+  recipeSaveMessage.classList.toggle("is-success", type === "success");
+  recipeSaveMessage.classList.toggle("is-error", type === "error");
+}
+
 function saveRecipe() {
   const name = cakeNameInput.value.trim();
   if (!name) {
-    recipeSaveMessage.textContent = "Escribe un nombre para la receta antes de guardarla.";
+    setRecipeSaveMessage("Escribe un nombre para la receta antes de guardarla.", "error");
     cakeNameInput.focus();
     return;
   }
 
+  if (!recipesStorageReady) {
+    setRecipeSaveMessage(
+      "No se guardó la receta porque no se pudieron leer las recetas existentes. Esto evita sobrescribir tus datos.",
+      "error",
+    );
+    return;
+  }
+
   try {
-    if (!recipesStorageReady) {
-      throw new Error("El almacenamiento de recetas no se pudo leer.");
-    }
     const snapshot = createRecipeSnapshot();
     const existingIndex = recipes.findIndex((recipe) => recipe.id === editingRecipeId);
     const recipe = {
@@ -477,14 +488,15 @@ function saveRecipe() {
     localStorage.setItem(RECIPES_STORAGE_KEY, JSON.stringify(nextRecipes));
     recipes = nextRecipes;
     editingRecipeId = recipe.id;
-    recipeSaveMessage.textContent = "Receta guardada en este navegador.";
+    setRecipeSaveMessage("Receta guardada en este navegador.", "success");
     recipeStorageMessage.textContent = "";
   } catch (error) {
-    recipeSaveMessage.textContent = error instanceof DOMException && error.name === "QuotaExceededError"
+    const message = error instanceof DOMException && error.name === "QuotaExceededError"
       ? "No hay espacio disponible para guardar la receta. Libera espacio del navegador e inténtalo de nuevo."
       : error instanceof Error && error.message.startsWith("Corrige")
         ? error.message
         : "No se pudo guardar la receta. Revisa que el almacenamiento del navegador esté disponible e inténtalo de nuevo.";
+    setRecipeSaveMessage(message, "error");
   }
 }
 
@@ -509,7 +521,7 @@ function loadRecipe(recipe) {
   nextCostLineId = Math.max(0, ...COST_CATEGORY_KEYS.flatMap((category) => costLines[category])
     .map((line) => Number(line.id) || 0)) + 1;
   editingRecipeId = recipe.id;
-  recipeSaveMessage.textContent = "";
+  setRecipeSaveMessage("", "");
   openCalculator(true);
   renderCurrency();
   saveDraft();
@@ -779,7 +791,7 @@ function renderCalculator() {
 function openCalculator(preserveRecipe = false) {
   if (!preserveRecipe) {
     editingRecipeId = null;
-    recipeSaveMessage.textContent = "";
+    setRecipeSaveMessage("", "");
   }
   homeSections.forEach((section) => {
     section.hidden = true;

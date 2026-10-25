@@ -1929,6 +1929,15 @@ main.is-calculating {
   line-height: 1.5;
 }
 
+.recipe-save-message.is-success {
+  color: var(--green-dark);
+  font-weight: 700;
+}
+
+.recipe-save-message.is-error {
+  color: #a74430;
+}
+
 .recipe-list {
   display: grid;
   gap: 13px;
