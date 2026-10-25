@@ -278,6 +278,12 @@
               <form id="ingredient-form" novalidate>
                 <div class="ingredient-form-fields">
                   <div class="field-group ingredient-name-field">
+                    <label class="field-label" for="saved-ingredient-select">Usar ingrediente de Mis ingredientes</label>
+                    <select class="text-input" id="saved-ingredient-select" name="saved-ingredient-id">
+                      <option value="">Agregar ingrediente manualmente</option>
+                    </select>
+                  </div>
+                  <div class="field-group ingredient-name-field">
                     <label class="field-label" for="ingredient-name">Nombre del ingrediente</label>
                     <input class="text-input" id="ingredient-name" name="ingredient-name" type="text" placeholder="Ej. Harina" autocomplete="off" />
                   </div>
@@ -338,6 +344,7 @@
                   </div>
                 </div>
                 <p class="unit-explanation">Peso: g, kg, lb y oz se convierten entre sí. Volumen: ml y l se convierten entre sí. Las unidades individuales solo se comparan con otras unidades individuales.</p>
+                <p class="form-message ingredient-inventory-message" id="ingredient-inventory-message" role="status" aria-live="polite"></p>
                 <p class="form-message" id="ingredient-error" role="alert" aria-live="polite"></p>
                 <button class="add-ingredient-button" type="submit"><span aria-hidden="true">+</span> Agregar ingrediente</button>
               </form>

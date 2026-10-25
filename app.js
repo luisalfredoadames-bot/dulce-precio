@@ -60,6 +60,7 @@ const calculatorCurrencyLabel = document.querySelector("#calculator-currency-lab
 const currencyLockNote = document.querySelector("#currency-lock-note");
 const packagePriceSymbol = document.querySelector("#package-price-symbol");
 const ingredientForm = document.querySelector("#ingredient-form");
+const savedIngredientSelect = document.querySelector("#saved-ingredient-select");
 const ingredientNameInput = document.querySelector("#ingredient-name");
 const ingredientCostModeInput = document.querySelector("#ingredient-cost-mode");
 const ingredientDirectCostInput = document.querySelector("#ingredient-direct-cost");
@@ -71,6 +72,7 @@ const packageUnitInput = document.querySelector("#package-unit");
 const usedQuantityInput = document.querySelector("#used-quantity");
 const usedUnitInput = document.querySelector("#used-unit");
 const ingredientError = document.querySelector("#ingredient-error");
+const ingredientInventoryMessage = document.querySelector("#ingredient-inventory-message");
 const ingredientList = document.querySelector("#ingredient-list");
 const emptyIngredients = document.querySelector("#empty-ingredients");
 const ingredientCount = document.querySelector("#ingredient-count");
@@ -915,6 +917,7 @@ function renderCalculator() {
   });
   ingredientDirectCostField.hidden = ingredientCostModeInput.value !== "direct";
   quantityBasedFields.hidden = ingredientCostModeInput.value === "direct";
+  renderSavedIngredientOptions();
 
   const hasEntries = hasCalculationEntries();
   calculatorCurrencyButtons.forEach((button) => {
@@ -1017,6 +1020,52 @@ function renderCalculator() {
   productionTotal.textContent = formatMoney(productionCost, currency);
   productionSummaryDetail.textContent = `Ingredientes ${formatMoney(totals.ingredients, currency)} + rellenos ${formatMoney(totals.fillings, currency)} + coberturas y cremas ${formatMoney(totals.toppings, currency)} + decoración ${formatMoney(totals.decoration, currency)} + empaque ${formatMoney(totals.packaging, currency)} + mano de obra ${formatMoney(totals.labor, currency)} + gastos adicionales ${formatMoney(totals.additional, currency)}.`;
   renderSalesPrice(productionCost, currency);
+}
+
+function renderSavedIngredientOptions() {
+  const selectedId = savedIngredientSelect.value;
+  savedIngredientSelect.replaceChildren(new Option("Agregar ingrediente manualmente", ""));
+  savedIngredients.filter(isSavedIngredient).forEach((savedIngredient) => {
+    const currency = CURRENCIES[savedIngredient.currency];
+    const option = new Option(
+      `${savedIngredient.name} · ${savedIngredient.quantity} ${savedIngredient.unit} · ${formatMoney(savedIngredient.price, currency)}`,
+      savedIngredient.id,
+    );
+    savedIngredientSelect.add(option);
+  });
+  if ([...savedIngredientSelect.options].some((option) => option.value === selectedId)) {
+    savedIngredientSelect.value = selectedId;
+  }
+}
+
+function selectSavedIngredient() {
+  const savedIngredient = savedIngredients.find((item) => item.id === savedIngredientSelect.value);
+  ingredientInventoryMessage.textContent = "";
+  if (!savedIngredient) {
+    return;
+  }
+  if (savedIngredient.currency !== calculationCurrency) {
+    if (hasCalculationEntries()) {
+      ingredientInventoryMessage.textContent = `Este ingrediente está en ${savedIngredient.currency} y el cálculo en ${calculationCurrency}. Elimina las partidas y los importes ingresados, o elige un ingrediente compatible; no se aplican conversiones automáticas.`;
+      savedIngredientSelect.value = "";
+      return;
+    }
+    calculationCurrency = savedIngredient.currency;
+    renderCalculator();
+    ingredientInventoryMessage.textContent = `La moneda del cálculo se ajustó a ${savedIngredient.currency} para coincidir con este ingrediente. No se realizó ninguna conversión.`;
+  }
+
+  ingredientCostModeInput.value = "quantity";
+  ingredientNameInput.value = savedIngredient.name;
+  packagePriceInput.value = String(savedIngredient.price);
+  packageQuantityInput.value = String(savedIngredient.quantity);
+  packageUnitInput.value = savedIngredient.unit;
+  usedQuantityInput.value = "";
+  usedUnitInput.value = savedIngredient.unit;
+  ingredientError.textContent = "";
+  renderCalculator();
+  saveDraft();
+  usedQuantityInput.focus();
 }
 
 function openCalculator(preserveRecipe = false) {
@@ -1143,6 +1192,8 @@ ingredientCostModeInput.addEventListener("change", () => {
   saveDraft();
 });
 
+savedIngredientSelect.addEventListener("change", selectSavedIngredient);
+
 ingredientForm.addEventListener("input", () => {
   saveDraft();
 });
@@ -1210,6 +1261,7 @@ ingredientForm.addEventListener("submit", (event) => {
       usedUnit,
       currency: calculationCurrency,
       cost,
+      ...(savedIngredientSelect.value ? { sourceInventoryId: savedIngredientSelect.value } : {}),
     });
   }
 
