@@ -140,6 +140,23 @@
           </form>
         </section>
 
+        <section class="recipes-view" id="recipes-view" aria-labelledby="recipes-title" hidden>
+          <button class="back-button" type="button" id="recipes-back-home">
+            <span aria-hidden="true">←</span> Volver al inicio
+          </button>
+          <div class="recipes-heading">
+            <div>
+              <p class="eyebrow section-eyebrow">Tu colección</p>
+              <h1 id="recipes-title">Mis recetas</h1>
+              <p class="calculator-intro">Consulta tus preparaciones guardadas o cárgalas en la calculadora para actualizarlas.</p>
+            </div>
+            <button class="add-ingredient-button recipes-new-button" type="button" id="recipes-new-calculation">Nuevo cálculo</button>
+          </div>
+          <p class="recipe-storage-message" id="recipe-storage-message" role="status" aria-live="polite"></p>
+          <ul class="recipe-list" id="recipe-list"></ul>
+          <p class="recipes-empty" id="recipes-empty">Todavía no tienes recetas guardadas. Abre un cálculo y pulsa «Guardar receta» para empezar.</p>
+        </section>
+
         <section class="calculator-view" id="calculator-view" aria-labelledby="calculator-title" hidden>
           <button class="back-button" type="button" id="back-home">
             <span aria-hidden="true">←</span> Volver al inicio
@@ -465,6 +482,17 @@
                 <span>Margen real sobre la venta</span>
                 <strong id="real-profit-margin">0%</strong>
               </div>
+            </div>
+          </section>
+
+          <section class="save-recipe-panel" aria-labelledby="save-recipe-title">
+            <div>
+              <h2 id="save-recipe-title">Guardar esta receta</h2>
+              <p>Usaremos el nombre del pastel que escribiste arriba. Puedes modificarlo antes de guardar.</p>
+            </div>
+            <div>
+              <button class="dialog-done" type="button" id="save-recipe">Guardar receta</button>
+              <p class="recipe-save-message" id="recipe-save-message" role="status" aria-live="polite"></p>
             </div>
           </section>
         </section>

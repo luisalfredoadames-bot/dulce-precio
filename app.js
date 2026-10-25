@@ -17,6 +17,7 @@ const CURRENCIES = {
 const CURRENCY_STORAGE_KEY = "dulceprecio-currency";
 const RATE_STORAGE_KEY = "dulceprecio-usd-to-dop-rate";
 const DRAFT_STORAGE_KEY = "dulceprecio-current-calculation";
+const RECIPES_STORAGE_KEY = "dulceprecio-recipes";
 const currencyButtons = document.querySelectorAll("[data-currency]");
 const sampleCost = document.querySelector("#sample-cost");
 const samplePrice = document.querySelector("#sample-price");
@@ -28,6 +29,14 @@ const dialogTitle = document.querySelector("#dialog-title");
 const dialogDescription = document.querySelector("#dialog-description");
 const homeSections = document.querySelectorAll(".home-section");
 const calculatorView = document.querySelector("#calculator-view");
+const recipesView = document.querySelector("#recipes-view");
+const recipeList = document.querySelector("#recipe-list");
+const recipesEmpty = document.querySelector("#recipes-empty");
+const recipeStorageMessage = document.querySelector("#recipe-storage-message");
+const recipeSaveMessage = document.querySelector("#recipe-save-message");
+const saveRecipeButton = document.querySelector("#save-recipe");
+const recipesBackHomeButton = document.querySelector("#recipes-back-home");
+const recipesNewCalculationButton = document.querySelector("#recipes-new-calculation");
 const backHomeButton = document.querySelector("#back-home");
 const cakeNameInput = document.querySelector("#cake-name");
 const cakeNameDisplay = document.querySelector("#cake-name-display");
@@ -88,6 +97,9 @@ let ingredients = [];
 let nextIngredientId = 1;
 let nextCostLineId = 1;
 let costLines = Object.fromEntries(COST_CATEGORY_KEYS.map((category) => [category, []]));
+let recipes = [];
+let editingRecipeId = null;
+let recipesStorageReady = true;
 
 const UNITS = {
   g: { family: "weight", factor: 1, base: "g" },
@@ -223,6 +235,307 @@ function getCategoryTotals() {
   totals.laborPercentage = labor.percentage;
   totals.preLaborSubtotal = preLaborSubtotal;
   return totals;
+}
+
+function createRecipeSnapshot() {
+  const totals = getCategoryTotals();
+  const percentage = Number(profitPercentageInput.value);
+  const productionCost = roundMoney(
+    totals.ingredients + totals.fillings + totals.toppings + totals.decoration
+    + totals.packaging + totals.labor + totals.additional,
+  );
+  const profit = roundMoney((productionCost * percentage) / 100);
+  const salePrice = roundMoney(productionCost + profit);
+
+  if (laborError.textContent || profitError.textContent || !Number.isFinite(percentage) || percentage < 0
+    || !Number.isFinite(profit) || !Number.isFinite(salePrice)) {
+    throw new Error("Corrige los datos de mano de obra y ganancia antes de guardar la receta.");
+  }
+
+  return {
+    name: cakeNameInput.value.trim(),
+    currency: calculationCurrency,
+    ingredients: JSON.parse(JSON.stringify(ingredients)),
+    costLines: JSON.parse(JSON.stringify(costLines)),
+    labor: {
+      mode: document.querySelector("[name='labor-mode']:checked").value,
+      hours: laborHoursInput.value,
+      hourlyRate: laborHourlyRateInput.value,
+      percentage: laborPercentageInput.value,
+    },
+    profitPercentage: percentage,
+    totals: {
+      ...totals,
+      productionCost,
+      profit,
+      salePrice,
+      realProfitMargin: salePrice > 0 ? (profit / salePrice) * 100 : 0,
+    },
+  };
+}
+
+function isRecipeRecord(recipe) {
+  const isMoneyValue = (value) => Number.isFinite(value) && value >= 0;
+  return recipe && typeof recipe === "object"
+    && typeof recipe.id === "string"
+    && typeof recipe.name === "string"
+    && typeof recipe.savedAt === "string"
+    && Object.prototype.hasOwnProperty.call(CURRENCIES, recipe.currency)
+    && Array.isArray(recipe.ingredients)
+    && recipe.ingredients.every((ingredient) => ingredient && typeof ingredient.name === "string"
+      && isMoneyValue(ingredient.cost)
+      && (ingredient.mode === "direct" || (ingredient.mode === "quantity"
+        && Number.isFinite(ingredient.packagePrice) && Number.isFinite(ingredient.packageQuantity)
+        && Number.isFinite(ingredient.usedQuantity) && typeof ingredient.packageUnit === "string"
+        && typeof ingredient.usedUnit === "string")))
+    && recipe.costLines && COST_CATEGORY_KEYS.every((category) => Array.isArray(recipe.costLines[category])
+      && recipe.costLines[category].every((line) => line && typeof line.name === "string" && isMoneyValue(line.cost)))
+    && recipe.labor && ["hours", "percentage", "combined"].includes(recipe.labor.mode)
+    && typeof recipe.labor.hours === "string"
+    && typeof recipe.labor.hourlyRate === "string"
+    && typeof recipe.labor.percentage === "string"
+    && Number.isFinite(recipe.profitPercentage) && recipe.profitPercentage >= 0
+    && recipe.totals && ["ingredients", ...COST_CATEGORY_KEYS, "labor", "laborHourly",
+      "laborPercentage", "productionCost", "profit", "salePrice", "realProfitMargin"]
+      .every((key) => isMoneyValue(recipe.totals[key]));
+}
+
+function addRecipeDetailLine(list, text) {
+  const item = document.createElement("li");
+  item.textContent = text;
+  list.append(item);
+}
+
+function renderRecipeDetails(recipe, container) {
+  const currency = CURRENCIES[recipe.currency];
+  const details = document.createElement("details");
+  details.className = "recipe-details";
+  const summary = document.createElement("summary");
+  summary.textContent = "Consultar todos los datos";
+  details.append(summary);
+
+  const content = document.createElement("div");
+  content.className = "recipe-detail-content";
+  const ingredientSection = document.createElement("section");
+  const ingredientHeading = document.createElement("h3");
+  ingredientHeading.textContent = "Ingredientes";
+  const ingredientItems = document.createElement("ul");
+  recipe.ingredients.forEach((ingredient) => {
+    const quantity = ingredient.mode === "direct"
+      ? "costo directo"
+      : `${ingredient.usedQuantity} ${ingredient.usedUnit} utilizados de ${ingredient.packageQuantity} ${ingredient.packageUnit} (paquete: ${formatMoney(ingredient.packagePrice, currency)})`;
+    addRecipeDetailLine(
+      ingredientItems,
+      `${ingredient.name}: ${quantity} · ${formatMoney(ingredient.cost, currency)}`,
+    );
+  });
+  if (!recipe.ingredients.length) {
+    addRecipeDetailLine(ingredientItems, "Sin ingredientes principales.");
+  }
+  ingredientSection.append(ingredientHeading, ingredientItems);
+  addRecipeDetailLine(ingredientItems, `Subtotal de ingredientes: ${formatMoney(recipe.totals.ingredients, currency)}`);
+  content.append(ingredientSection);
+
+  COST_CATEGORY_KEYS.forEach((category) => {
+    const section = document.createElement("section");
+    const heading = document.createElement("h3");
+    heading.textContent = COST_CATEGORY_LABELS[category];
+    const items = document.createElement("ul");
+    const lines = Array.isArray(recipe.costLines[category]) ? recipe.costLines[category] : [];
+    lines.forEach((line) => addRecipeDetailLine(items, `${line.name}: ${formatMoney(line.cost, currency)}`));
+    if (!lines.length) {
+      addRecipeDetailLine(items, "Sin partidas.");
+    }
+    addRecipeDetailLine(items, `Subtotal: ${formatMoney(recipe.totals[category], currency)}`);
+    section.append(heading, items);
+    content.append(section);
+  });
+
+  const laborSection = document.createElement("section");
+  const laborHeading = document.createElement("h3");
+  laborHeading.textContent = "Mano de obra";
+  const laborItems = document.createElement("ul");
+  const laborModes = { hours: "Por horas", percentage: "Porcentaje", combined: "Combinado" };
+  addRecipeDetailLine(laborItems, `Modalidad: ${laborModes[recipe.labor.mode] || recipe.labor.mode}`);
+  if (recipe.labor.mode === "hours" || recipe.labor.mode === "combined") {
+    addRecipeDetailLine(laborItems, `Horas: ${recipe.labor.hours || "—"}`);
+    addRecipeDetailLine(laborItems, `Costo por hora: ${recipe.labor.hourlyRate ? formatMoney(Number(recipe.labor.hourlyRate), currency) : "—"}`);
+  }
+  if (recipe.labor.mode === "percentage" || recipe.labor.mode === "combined") {
+    addRecipeDetailLine(laborItems, `Porcentaje de mano de obra: ${recipe.labor.percentage || "—"}%`);
+  }
+  addRecipeDetailLine(laborItems, `Costo total de mano de obra: ${formatMoney(recipe.totals.labor, currency)}`);
+  addRecipeDetailLine(laborItems, `Costo por horas: ${formatMoney(recipe.totals.laborHourly, currency)}`);
+  addRecipeDetailLine(laborItems, `Costo porcentual: ${formatMoney(recipe.totals.laborPercentage, currency)}`);
+  laborSection.append(laborHeading, laborItems);
+  content.append(laborSection);
+
+  const resultSection = document.createElement("section");
+  const resultHeading = document.createElement("h3");
+  resultHeading.textContent = "Costos y precio";
+  const resultItems = document.createElement("ul");
+  addRecipeDetailLine(resultItems, `Moneda: ${currency.code}`);
+  addRecipeDetailLine(resultItems, `Costo total de producción: ${formatMoney(recipe.totals.productionCost, currency)}`);
+  addRecipeDetailLine(resultItems, `Porcentaje de ganancia: ${recipe.profitPercentage}%`);
+  addRecipeDetailLine(resultItems, `Ganancia: ${formatMoney(recipe.totals.profit, currency)}`);
+  addRecipeDetailLine(resultItems, `Precio de venta sugerido: ${formatMoney(recipe.totals.salePrice, currency)}`);
+  addRecipeDetailLine(resultItems, `Margen real de ganancia: ${new Intl.NumberFormat("es-DO", { maximumFractionDigits: 2 }).format(recipe.totals.realProfitMargin)}%`);
+  resultSection.append(resultHeading, resultItems);
+  content.append(resultSection);
+  details.append(content);
+  container.append(details);
+}
+
+function renderRecipes() {
+  recipeList.replaceChildren();
+  const validRecipes = recipes.filter(isRecipeRecord);
+  recipesEmpty.hidden = validRecipes.length > 0;
+
+  validRecipes.forEach((recipe) => {
+    const currency = CURRENCIES[recipe.currency];
+    const item = document.createElement("li");
+    item.className = "recipe-card";
+    const heading = document.createElement("div");
+    heading.className = "recipe-card-heading";
+    const name = document.createElement("h2");
+    name.textContent = recipe.name;
+    const savedDate = document.createElement("time");
+    savedDate.dateTime = recipe.savedAt;
+    const parsedDate = new Date(recipe.savedAt);
+    savedDate.textContent = Number.isNaN(parsedDate.getTime())
+      ? "Fecha no disponible"
+      : `Guardada el ${new Intl.DateTimeFormat("es-DO", { dateStyle: "medium" }).format(parsedDate)}`;
+    heading.append(name, savedDate);
+
+    const metadata = document.createElement("p");
+    metadata.className = "recipe-card-metadata";
+    metadata.textContent = `${currency.code} · Precio de venta: ${formatMoney(recipe.totals.salePrice, currency)}`;
+    const actions = document.createElement("div");
+    actions.className = "recipe-card-actions";
+    const loadButton = document.createElement("button");
+    loadButton.type = "button";
+    loadButton.className = "recipe-action-button";
+    loadButton.textContent = "Cargar en calculadora";
+    loadButton.addEventListener("click", () => loadRecipe(recipe));
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.className = "recipe-delete-button";
+    deleteButton.textContent = "Eliminar";
+    deleteButton.addEventListener("click", () => deleteRecipe(recipe));
+    actions.append(loadButton, deleteButton);
+    item.append(heading, metadata);
+    renderRecipeDetails(recipe, item);
+    item.append(actions);
+    recipeList.append(item);
+  });
+}
+
+function openRecipes() {
+  homeSections.forEach((section) => {
+    section.hidden = true;
+  });
+  calculatorView.hidden = true;
+  recipesView.hidden = false;
+  document.querySelector("main").classList.remove("is-calculating");
+  renderRecipes();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function createRecipeId() {
+  let id;
+  do {
+    id = `recipe-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  } while (recipes.some((recipe) => recipe && recipe.id === id));
+  return id;
+}
+
+function saveRecipe() {
+  const name = cakeNameInput.value.trim();
+  if (!name) {
+    recipeSaveMessage.textContent = "Escribe un nombre para la receta antes de guardarla.";
+    cakeNameInput.focus();
+    return;
+  }
+
+  try {
+    if (!recipesStorageReady) {
+      throw new Error("El almacenamiento de recetas no se pudo leer.");
+    }
+    const snapshot = createRecipeSnapshot();
+    const existingIndex = recipes.findIndex((recipe) => recipe.id === editingRecipeId);
+    const recipe = {
+      ...snapshot,
+      id: existingIndex >= 0 ? editingRecipeId : createRecipeId(),
+      savedAt: new Date().toISOString(),
+    };
+    const nextRecipes = [...recipes];
+    if (existingIndex >= 0) {
+      nextRecipes[existingIndex] = recipe;
+    } else {
+      nextRecipes.push(recipe);
+    }
+    localStorage.setItem(RECIPES_STORAGE_KEY, JSON.stringify(nextRecipes));
+    recipes = nextRecipes;
+    editingRecipeId = recipe.id;
+    recipeSaveMessage.textContent = "Receta guardada en este navegador.";
+    recipeStorageMessage.textContent = "";
+  } catch (error) {
+    recipeSaveMessage.textContent = error instanceof DOMException && error.name === "QuotaExceededError"
+      ? "No hay espacio disponible para guardar la receta. Libera espacio del navegador e inténtalo de nuevo."
+      : error instanceof Error && error.message.startsWith("Corrige")
+        ? error.message
+        : "No se pudo guardar la receta. Revisa que el almacenamiento del navegador esté disponible e inténtalo de nuevo.";
+  }
+}
+
+function loadRecipe(recipe) {
+  cakeNameInput.value = recipe.name;
+  calculationCurrency = recipe.currency;
+  selectedCurrency = recipe.currency;
+  ingredients = JSON.parse(JSON.stringify(recipe.ingredients));
+  costLines = Object.fromEntries(COST_CATEGORY_KEYS.map((category) => [
+    category,
+    Array.isArray(recipe.costLines[category]) ? JSON.parse(JSON.stringify(recipe.costLines[category])) : [],
+  ]));
+  laborHoursInput.value = recipe.labor.hours || "";
+  laborHourlyRateInput.value = recipe.labor.hourlyRate || "";
+  laborPercentageInput.value = recipe.labor.percentage || "";
+  profitPercentageInput.value = String(recipe.profitPercentage);
+  const mode = ["hours", "percentage", "combined"].includes(recipe.labor.mode) ? recipe.labor.mode : "hours";
+  document.querySelector(`[name='labor-mode'][value='${mode}']`).checked = true;
+  ingredientForm.reset();
+  document.querySelectorAll("[data-cost-form]").forEach((form) => form.reset());
+  nextIngredientId = Math.max(0, ...ingredients.map((ingredient) => Number(ingredient.id) || 0)) + 1;
+  nextCostLineId = Math.max(0, ...COST_CATEGORY_KEYS.flatMap((category) => costLines[category])
+    .map((line) => Number(line.id) || 0)) + 1;
+  editingRecipeId = recipe.id;
+  recipeSaveMessage.textContent = "";
+  openCalculator(true);
+  renderCurrency();
+  saveDraft();
+}
+
+function deleteRecipe(recipe) {
+  if (!recipesStorageReady) {
+    recipeStorageMessage.textContent = "No se pueden eliminar recetas porque no fue posible leer el almacenamiento existente.";
+    return;
+  }
+  if (!window.confirm(`¿Quieres eliminar la receta «${recipe.name}»? Esta acción no se puede deshacer.`)) {
+    return;
+  }
+
+  try {
+    const nextRecipes = recipes.filter((item) => item.id !== recipe.id);
+    localStorage.setItem(RECIPES_STORAGE_KEY, JSON.stringify(nextRecipes));
+    recipes = nextRecipes;
+    if (editingRecipeId === recipe.id) {
+      editingRecipeId = null;
+    }
+    recipeStorageMessage.textContent = "";
+    renderRecipes();
+  } catch {
+    recipeStorageMessage.textContent = "No se pudo eliminar la receta. Revisa que el almacenamiento del navegador esté disponible e inténtalo de nuevo.";
+  }
 }
 
 function hasCalculationEntries() {
@@ -463,10 +776,15 @@ function renderCalculator() {
   renderSalesPrice(productionCost, currency);
 }
 
-function openCalculator() {
+function openCalculator(preserveRecipe = false) {
+  if (!preserveRecipe) {
+    editingRecipeId = null;
+    recipeSaveMessage.textContent = "";
+  }
   homeSections.forEach((section) => {
     section.hidden = true;
   });
+  recipesView.hidden = true;
   calculatorView.hidden = false;
   document.querySelector("main").classList.add("is-calculating");
   renderCalculator();
@@ -476,6 +794,7 @@ function openCalculator() {
 
 function returnHome() {
   calculatorView.hidden = true;
+  recipesView.hidden = true;
   homeSections.forEach((section) => {
     section.hidden = false;
   });
@@ -501,7 +820,22 @@ try {
   // La pantalla sigue funcionando aunque el navegador bloquee el almacenamiento local.
 }
 
+try {
+  const savedRecipes = localStorage.getItem(RECIPES_STORAGE_KEY);
+  if (savedRecipes) {
+    const parsedRecipes = JSON.parse(savedRecipes);
+    if (!Array.isArray(parsedRecipes)) {
+      throw new Error("El contenido guardado no tiene el formato esperado.");
+    }
+    recipes = parsedRecipes;
+  }
+} catch {
+  recipesStorageReady = false;
+  recipeStorageMessage.textContent = "No se pudieron leer las recetas guardadas. No guardes recetas nuevas hasta recuperar el almacenamiento para evitar sobrescribir los datos existentes.";
+}
+
 renderCurrency();
+renderRecipes();
 
 currencyButtons.forEach((button) => {
   button.addEventListener("click", () => {
@@ -703,6 +1037,9 @@ profitQuickButtons.forEach((button) => {
 });
 
 backHomeButton.addEventListener("click", returnHome);
+recipesBackHomeButton.addEventListener("click", returnHome);
+recipesNewCalculationButton.addEventListener("click", () => openCalculator());
+saveRecipeButton.addEventListener("click", saveRecipe);
 
 rateForm.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -749,6 +1086,11 @@ document.querySelectorAll("[data-feature]").forEach((button) => {
 
     if (button.dataset.feature === "calculo") {
       openCalculator();
+      return;
+    }
+
+    if (button.dataset.feature === "recetas") {
+      openRecipes();
       return;
     }
 
