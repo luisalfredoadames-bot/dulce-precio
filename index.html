@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="DulcePrecio te ayuda a organizar los costos y precios de tus pasteles."
+    />
+    <title>DulcePrecio | Costos claros para tus postres</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#inicio" aria-label="DulcePrecio, inicio">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 40 40" fill="none">
+              <path d="M8 27h24l-2.2 7H10.2L8 27Z" fill="currentColor" />
+              <path d="M11 19h18l3 8H8l3-8Z" fill="currentColor" opacity=".72" />
+              <path d="M14 12h12l3 7H11l3-7Z" fill="currentColor" opacity=".46" />
+              <path d="M20 5v7m0-7c-3 0-4 2-4 4 2 0 4-1 4-4Zm0 0c3 0 4 2 4 4-2 0-4-1-4-4Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
+          <span class="brand-name">DulcePrecio</span>
+        </a>
+        <span class="topbar-note">Tu repostería, en números claros</span>
+      </header>
+
+      <main id="inicio">
+        <section class="welcome home-section" aria-labelledby="welcome-title">
+          <div class="welcome-copy">
+            <p class="eyebrow"><span class="eyebrow-dot"></span> Hecho para tu negocio</p>
+            <h1 id="welcome-title">Cada dulce merece<br class="desktop-break" /> un precio justo.</h1>
+            <p class="welcome-description">
+              Calcula cuánto cuesta preparar tus pasteles y encuentra un precio de venta que cuide tu trabajo.
+            </p>
+          </div>
+
+          <section class="currency-panel" aria-labelledby="currency-title">
+            <div class="currency-panel-heading">
+              <span class="currency-symbol" aria-hidden="true">¤</span>
+              <div>
+                <h2 id="currency-title">Moneda principal</h2>
+                <p>Elige cómo ver tus importes</p>
+              </div>
+            </div>
+            <div class="currency-switch" role="group" aria-label="Seleccionar moneda principal">
+              <button class="currency-option is-selected" type="button" data-currency="DOP" aria-pressed="true">
+                <span class="currency-option-code">DOP</span>
+                <span class="currency-option-symbol">RD$</span>
+              </button>
+              <button class="currency-option" type="button" data-currency="USD" aria-pressed="false">
+                <span class="currency-option-code">USD</span>
+                <span class="currency-option-symbol">US$</span>
+              </button>
+            </div>
+          </section>
+        </section>
+
+        <section class="workspace home-section" aria-labelledby="actions-title">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow section-eyebrow">Tu espacio de trabajo</p>
+              <h2 id="actions-title">¿Qué quieres hacer?</h2>
+            </div>
+            <span class="section-aside">Todo empieza con una buena receta</span>
+          </div>
+
+          <div class="action-grid">
+            <button class="action-card action-card-primary" type="button" data-feature="calculo">
+              <span class="action-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none"><rect x="5" y="3" width="14" height="18" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M8 7h8M8 11h2m4 0h2m-8 4h2m4 0h2m-8 4h2m4 0h2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+              </span>
+              <span class="action-copy"><span class="action-title">Nuevo cálculo</span><span class="action-description">Calcula el costo de un pastel</span></span>
+              <span class="action-arrow" aria-hidden="true">↗</span>
+            </button>
+            <button class="action-card" type="button" data-feature="ingredientes">
+              <span class="action-icon icon-coral" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M4 9h16l-1.5 11h-13L4 9Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8 9c0-2.2 1.8-4 4-4s4 1.8 4 4M8 13v3m4-3v3m4-3v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+              </span>
+              <span class="action-copy"><span class="action-title">Mis ingredientes</span><span class="action-description">Organiza precios y cantidades</span></span>
+              <span class="action-arrow" aria-hidden="true">↗</span>
+            </button>
+            <button class="action-card" type="button" data-feature="recetas">
+              <span class="action-icon icon-yellow" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M5 5.5A2.5 2.5 0 0 1 7.5 3H20v16H7.5A2.5 2.5 0 0 0 5 21V5.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M5 6v15m4-14h7m-7 4h7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+              </span>
+              <span class="action-copy"><span class="action-title">Mis recetas</span><span class="action-description">Guarda tus preparaciones favoritas</span></span>
+              <span class="action-arrow" aria-hidden="true">↗</span>
+            </button>
+            <button class="action-card" type="button" data-feature="historial">
+              <span class="action-icon icon-blue" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M3.5 12a8.5 8.5 0 1 0 2.2-5.7L3.5 8.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M3.5 4.5v4h4m4.5-1v5l3.3 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </span>
+              <span class="action-copy"><span class="action-title">Historial</span><span class="action-description">Consulta tus cálculos anteriores</span></span>
+              <span class="action-arrow" aria-hidden="true">↗</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="examples-section home-section" aria-labelledby="examples-title">
+          <div class="examples-intro">
+            <span class="example-badge">EJEMPLO</span>
+            <h2 id="examples-title">Así se verían tus números</h2>
+            <p>Valores ilustrativos e independientes. Cambiar de moneda no los convierte.</p>
+          </div>
+          <div class="example-values" aria-live="polite" aria-atomic="true">
+            <div class="example-value">
+              <span class="example-label">Costo de receta · ejemplo</span>
+              <strong id="sample-cost">RD$850</strong>
+            </div>
+            <span class="example-divider" aria-hidden="true"></span>
+            <div class="example-value">
+              <span class="example-label">Precio de venta · ejemplo</span>
+              <strong id="sample-price">RD$1,600</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="rate-section home-section" aria-labelledby="rate-title">
+          <div class="rate-copy">
+            <span class="rate-icon" aria-hidden="true">↔</span>
+            <div>
+              <h2 id="rate-title">Tasa de cambio</h2>
+              <p>Configúrala si luego necesitas convertir. No hay una tasa predeterminada.</p>
+            </div>
+          </div>
+          <form class="rate-form" id="rate-form" novalidate>
+            <label class="rate-label" for="exchange-rate">1 USD equivale a</label>
+            <div class="rate-controls">
+              <div class="rate-input-wrap">
+                <span aria-hidden="true">RD$</span>
+                <input id="exchange-rate" name="exchange-rate" type="number" min="0" step="any" inputmode="decimal" placeholder="Ingresa una tasa" aria-describedby="rate-message" />
+              </div>
+              <button class="save-rate-button" type="submit">Guardar tasa</button>
+            </div>
+            <p class="rate-message" id="rate-message" role="status">Sin tasa configurada. No se aplican conversiones.</p>
+          </form>
+        </section>
+
+        <section class="calculator-view" id="calculator-view" aria-labelledby="calculator-title" hidden>
+          <button class="back-button" type="button" id="back-home">
+            <span aria-hidden="true">←</span> Volver al inicio
+          </button>
+
+          <div class="calculator-heading">
+            <div>
+              <p class="eyebrow section-eyebrow">Nuevo cálculo</p>
+              <h1 id="calculator-title">Calcula el costo de tu pastel</h1>
+              <p class="calculator-intro">Agrega los ingredientes y cantidades que utilizas para conocer su costo real.</p>
+            </div>
+            <div class="calculation-currency" aria-live="polite">
+              <span>Moneda de este cálculo</span>
+              <strong id="calculator-currency-label">RD$ · DOP</strong>
+            </div>
+          </div>
+
+          <div class="calculator-layout">
+            <section class="calculator-panel" aria-labelledby="cake-details-title">
+              <div class="calculator-panel-heading">
+                <span class="step-number">1</span>
+                <div>
+                  <h2 id="cake-details-title">Tu pastel</h2>
+                  <p>Elige un nombre y una moneda para el cálculo.</p>
+                </div>
+              </div>
+
+              <label class="field-label" for="cake-name">Nombre del pastel</label>
+              <input class="text-input" id="cake-name" name="cake-name" type="text" placeholder="Ej. Bizcocho de vainilla" autocomplete="off" />
+
+              <fieldset class="calculator-currency-fieldset">
+                <legend class="field-label">Moneda del cálculo</legend>
+                <div class="currency-switch calculator-currency-switch" role="group" aria-label="Seleccionar moneda del cálculo">
+                  <button class="currency-option is-selected" type="button" data-calculator-currency="DOP" aria-pressed="true">
+                    <span class="currency-option-code">DOP</span>
+                    <span class="currency-option-symbol">RD$</span>
+                  </button>
+                  <button class="currency-option" type="button" data-calculator-currency="USD" aria-pressed="false">
+                    <span class="currency-option-code">USD</span>
+                    <span class="currency-option-symbol">US$</span>
+                  </button>
+                </div>
+                <p class="currency-lock-note" id="currency-lock-note">Todos los ingredientes de este cálculo usarán la misma moneda.</p>
+              </fieldset>
+            </section>
+
+            <section class="calculator-panel ingredient-entry-panel" aria-labelledby="ingredient-entry-title">
+              <div class="calculator-panel-heading">
+                <span class="step-number">2</span>
+                <div>
+                  <h2 id="ingredient-entry-title">Ingredientes principales</h2>
+                  <p>Las unidades de paquete y uso pueden ser distintas.</p>
+                </div>
+              </div>
+
+              <form id="ingredient-form" novalidate>
+                <div class="ingredient-form-fields">
+                  <div class="field-group ingredient-name-field">
+                    <label class="field-label" for="ingredient-name">Nombre del ingrediente</label>
+                    <input class="text-input" id="ingredient-name" name="ingredient-name" type="text" placeholder="Ej. Harina" autocomplete="off" />
+                  </div>
+                  <div class="field-group ingredient-mode-field">
+                    <label class="field-label" for="ingredient-cost-mode">Cómo registrar el costo</label>
+                    <select class="text-input" id="ingredient-cost-mode" name="ingredient-cost-mode">
+                      <option value="quantity">Calcular por cantidades</option>
+                      <option value="direct">Ingresar costo directo</option>
+                    </select>
+                  </div>
+                  <div class="field-group ingredient-direct-cost-field" id="ingredient-direct-cost-field" hidden>
+                    <label class="field-label" for="ingredient-direct-cost">Costo del ingrediente</label>
+                    <div class="amount-input-wrap">
+                      <span class="amount-currency direct-cost-symbol">RD$</span>
+                      <input id="ingredient-direct-cost" name="ingredient-direct-cost" type="number" min="0" step="any" inputmode="decimal" placeholder="0.00" />
+                    </div>
+                  </div>
+                  <div class="ingredient-quantity-fields" id="quantity-based-fields">
+                    <div class="field-group">
+                      <label class="field-label" for="package-price">Precio pagado por el paquete</label>
+                      <div class="amount-input-wrap">
+                        <span class="amount-currency" id="package-price-symbol">RD$</span>
+                        <input id="package-price" name="package-price" type="number" min="0" step="any" inputmode="decimal" placeholder="0.00" />
+                      </div>
+                    </div>
+                    <div class="field-group">
+                      <label class="field-label" for="package-quantity">Contenido del paquete</label>
+                      <div class="quantity-unit-field">
+                        <input class="text-input" id="package-quantity" name="package-quantity" type="number" min="0" step="any" inputmode="decimal" placeholder="Ej. 1" />
+                        <select class="text-input unit-select" id="package-unit" name="package-unit" aria-label="Unidad del paquete">
+                          <option value="">Unidad</option>
+                          <option value="g">g</option>
+                          <option value="kg">kg</option>
+                          <option value="lb">lb</option>
+                          <option value="oz">oz</option>
+                          <option value="ml">ml</option>
+                          <option value="l">l</option>
+                          <option value="unidad">unidad</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="field-group">
+                      <label class="field-label" for="used-quantity">Cantidad utilizada</label>
+                      <div class="quantity-unit-field">
+                        <input class="text-input" id="used-quantity" name="used-quantity" type="number" min="0" step="any" inputmode="decimal" placeholder="Ej. 250" />
+                        <select class="text-input unit-select" id="used-unit" name="used-unit" aria-label="Unidad utilizada">
+                          <option value="">Unidad</option>
+                          <option value="g">g</option>
+                          <option value="kg">kg</option>
+                          <option value="lb">lb</option>
+                          <option value="oz">oz</option>
+                          <option value="ml">ml</option>
+                          <option value="l">l</option>
+                          <option value="unidad">unidad</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <p class="unit-explanation">Peso: g, kg, lb y oz se convierten entre sí. Volumen: ml y l se convierten entre sí. Las unidades individuales solo se comparan con otras unidades individuales.</p>
+                <p class="form-message" id="ingredient-error" role="alert" aria-live="polite"></p>
+                <button class="add-ingredient-button" type="submit"><span aria-hidden="true">+</span> Agregar ingrediente</button>
+              </form>
+            </section>
+          </div>
+
+          <section class="ingredients-result" aria-labelledby="ingredients-result-title">
+            <div class="result-heading">
+              <div>
+                <p class="eyebrow section-eyebrow">01 · Ingredientes principales</p>
+                <h2 id="ingredients-result-title"><span id="cake-name-display">Tu pastel</span></h2>
+              </div>
+              <span class="ingredient-count" id="ingredient-count">0 ingredientes</span>
+            </div>
+
+            <div class="ingredient-list-wrap">
+              <div class="ingredient-list-header" aria-hidden="true">
+                <span>Ingrediente</span>
+                <span>Cantidad utilizada</span>
+                <span>Costo</span>
+                <span></span>
+              </div>
+              <ul class="ingredient-list" id="ingredient-list"></ul>
+              <p class="empty-ingredients" id="empty-ingredients">Aún no hay ingredientes. Completa los datos de arriba para comenzar.</p>
+            </div>
+
+            <div class="total-row" aria-live="polite" aria-atomic="true">
+              <div>
+                <span class="total-label">Subtotal de ingredientes principales</span>
+                <span class="total-note">Este cálculo utiliza <strong id="total-currency-code">DOP</strong>. No incluye otros gastos.</span>
+              </div>
+              <strong class="total-amount" id="ingredient-total">RD$0</strong>
+            </div>
+          </section>
+
+          <section class="cost-category-grid" aria-label="Otros costos de producción">
+            <section class="cost-category" data-cost-category="fillings" aria-labelledby="fillings-title">
+              <div class="cost-category-heading">
+                <span class="category-mark category-mark-coral" aria-hidden="true">02</span>
+                <div><h2 id="fillings-title">Rellenos</h2><p>Agrega cada relleno usado en el pastel.</p></div>
+              </div>
+              <form class="cost-line-form" data-cost-form="fillings" novalidate>
+                <label class="field-label" for="fillings-name">Nombre del relleno</label>
+                <input class="text-input" id="fillings-name" name="name" type="text" placeholder="Ej. Dulce de leche" />
+                <label class="field-label" for="fillings-cost">Costo</label>
+                <div class="amount-input-wrap"><span class="amount-currency" data-currency-symbol>RD$</span><input class="line-cost-input" id="fillings-cost" name="cost" type="number" min="0" step="any" inputmode="decimal" placeholder="0.00" /></div>
+                <p class="form-message" data-form-error role="alert" aria-live="polite"></p>
+                <button class="add-cost-line-button" type="submit">+ Agregar relleno</button>
+              </form>
+              <ul class="cost-line-list" data-cost-list="fillings"></ul>
+              <p class="cost-line-empty" data-cost-empty="fillings">Aún no has agregado rellenos.</p>
+              <div class="category-subtotal"><span>Subtotal rellenos</span><strong data-subtotal="fillings">RD$0</strong></div>
+            </section>
+
+            <section class="cost-category" data-cost-category="toppings" aria-labelledby="toppings-title">
+              <div class="cost-category-heading">
+                <span class="category-mark category-mark-yellow" aria-hidden="true">03</span>
+                <div><h2 id="toppings-title">Coberturas y cremas</h2><p>Incluye coberturas, cremas y betunes.</p></div>
+              </div>
+              <form class="cost-line-form" data-cost-form="toppings" novalidate>
+                <label class="field-label" for="toppings-name">Nombre de la partida</label>
+                <input class="text-input" id="toppings-name" name="name" type="text" placeholder="Ej. Crema de mantequilla" />
+                <label class="field-label" for="toppings-cost">Costo</label>
+                <div class="amount-input-wrap"><span class="amount-currency" data-currency-symbol>RD$</span><input class="line-cost-input" id="toppings-cost" name="cost" type="number" min="0" step="any" inputmode="decimal" placeholder="0.00" /></div>
+                <p class="form-message" data-form-error role="alert" aria-live="polite"></p>
+                <button class="add-cost-line-button" type="submit">+ Agregar cobertura</button>
+              </form>
+              <ul class="cost-line-list" data-cost-list="toppings"></ul>
+              <p class="cost-line-empty" data-cost-empty="toppings">Aún no has agregado coberturas.</p>
+              <div class="category-subtotal"><span>Subtotal coberturas y cremas</span><strong data-subtotal="toppings">RD$0</strong></div>
+            </section>
+
+            <section class="cost-category" data-cost-category="decoration" aria-labelledby="decoration-title">
+              <div class="cost-category-heading">
+                <span class="category-mark category-mark-blue" aria-hidden="true">04</span>
+                <div><h2 id="decoration-title">Decoración</h2><p>Registra los adornos y detalles.</p></div>
+              </div>
+              <form class="cost-line-form" data-cost-form="decoration" novalidate>
+                <label class="field-label" for="decoration-name">Nombre de la partida</label>
+                <input class="text-input" id="decoration-name" name="name" type="text" placeholder="Ej. Flores de azúcar" />
+                <label class="field-label" for="decoration-cost">Costo</label>
+                <div class="amount-input-wrap"><span class="amount-currency" data-currency-symbol>RD$</span><input class="line-cost-input" id="decoration-cost" name="cost" type="number" min="0" step="any" inputmode="decimal" placeholder="0.00" /></div>
+                <p class="form-message" data-form-error role="alert" aria-live="polite"></p>
+                <button class="add-cost-line-button" type="submit">+ Agregar decoración</button>
+              </form>
+              <ul class="cost-line-list" data-cost-list="decoration"></ul>
+              <p class="cost-line-empty" data-cost-empty="decoration">Aún no has agregado decoración.</p>
+              <div class="category-subtotal"><span>Subtotal decoración</span><strong data-subtotal="decoration">RD$0</strong></div>
+            </section>
+
+            <section class="cost-category" data-cost-category="packaging" aria-labelledby="packaging-title">
+              <div class="cost-category-heading">
+                <span class="category-mark category-mark-green" aria-hidden="true">05</span>
+                <div><h2 id="packaging-title">Empaque</h2><p>Cajas, bases, cintas y otros materiales.</p></div>
+              </div>
+              <form class="cost-line-form" data-cost-form="packaging" novalidate>
+                <label class="field-label" for="packaging-name">Nombre de la partida</label>
+                <input class="text-input" id="packaging-name" name="name" type="text" placeholder="Ej. Caja para pastel" />
+                <label class="field-label" for="packaging-cost">Costo</label>
+                <div class="amount-input-wrap"><span class="amount-currency" data-currency-symbol>RD$</span><input class="line-cost-input" id="packaging-cost" name="cost" type="number" min="0" step="any" inputmode="decimal" placeholder="0.00" /></div>
+                <p class="form-message" data-form-error role="alert" aria-live="polite"></p>
+                <button class="add-cost-line-button" type="submit">+ Agregar empaque</button>
+              </form>
+              <ul class="cost-line-list" data-cost-list="packaging"></ul>
+              <p class="cost-line-empty" data-cost-empty="packaging">Aún no has agregado empaque.</p>
+              <div class="category-subtotal"><span>Subtotal empaque</span><strong data-subtotal="packaging">RD$0</strong></div>
+            </section>
+
+            <section class="cost-category labor-category" data-cost-category="labor" aria-labelledby="labor-title">
+              <div class="cost-category-heading">
+                <span class="category-mark category-mark-yellow" aria-hidden="true">06</span>
+                <div><h2 id="labor-title">Mano de obra</h2><p>Elige cómo calcular el trabajo de preparación.</p></div>
+              </div>
+              <fieldset class="labor-mode-fieldset">
+                <legend class="field-label">Modalidad de cálculo</legend>
+                <div class="labor-mode-options">
+                  <label><input type="radio" name="labor-mode" value="hours" checked /><span>Por horas</span></label>
+                  <label><input type="radio" name="labor-mode" value="percentage" /><span>Porcentaje</span></label>
+                  <label><input type="radio" name="labor-mode" value="combined" /><span>Combinado</span></label>
+                </div>
+              </fieldset>
+              <div class="labor-fields">
+                <div class="labor-hours-fields" id="labor-hours-fields">
+                  <div><label class="field-label" for="labor-hours">Horas trabajadas</label><input class="text-input labor-input" id="labor-hours" type="number" min="0" step="any" inputmode="decimal" placeholder="Ej. 3.5" /></div>
+                  <div><label class="field-label" for="labor-hourly-rate">Costo por hora</label><div class="amount-input-wrap"><span class="amount-currency" data-currency-symbol>RD$</span><input class="labor-input" id="labor-hourly-rate" type="number" min="0" step="any" inputmode="decimal" placeholder="0.00" /></div></div>
+                </div>
+                <div class="labor-percentage-fields" id="labor-percentage-fields" hidden>
+                  <label class="field-label" for="labor-percentage">Porcentaje sobre costos previos</label>
+                  <div class="percentage-input-wrap"><input class="labor-input" id="labor-percentage" type="number" min="0" step="any" inputmode="decimal" placeholder="Ej. 15" /><span>%</span></div>
+                  <p class="labor-base-note">Base sin mano de obra: <strong id="labor-percentage-base">RD$0</strong></p>
+                </div>
+              </div>
+              <div class="labor-breakdown" aria-live="polite" aria-atomic="true">
+                <div><span>Costo por horas</span><strong id="labor-hourly-cost">RD$0</strong></div>
+                <div><span>Adicional porcentual (<span id="labor-percentage-label">0%</span>)</span><strong id="labor-percentage-cost">RD$0</strong></div>
+              </div>
+              <p class="form-message labor-error" id="labor-error" role="alert" aria-live="polite"></p>
+              <div class="category-subtotal labor-subtotal"><span>Total de mano de obra</span><strong id="labor-total">RD$0</strong></div>
+            </section>
+
+            <section class="cost-category" data-cost-category="additional" aria-labelledby="additional-title">
+              <div class="cost-category-heading">
+                <span class="category-mark category-mark-coral" aria-hidden="true">07</span>
+                <div><h2 id="additional-title">Gastos adicionales de producción</h2><p>Otros costos asociados a preparar el pastel.</p></div>
+              </div>
+              <form class="cost-line-form" data-cost-form="additional" novalidate>
+                <label class="field-label" for="additional-name">Concepto</label>
+                <input class="text-input" id="additional-name" name="name" type="text" placeholder="Ej. Electricidad del horno" />
+                <label class="field-label" for="additional-cost">Costo</label>
+                <div class="amount-input-wrap"><span class="amount-currency" data-currency-symbol>RD$</span><input class="line-cost-input" id="additional-cost" name="cost" type="number" min="0" step="any" inputmode="decimal" placeholder="0.00" /></div>
+                <p class="form-message" data-form-error role="alert" aria-live="polite"></p>
+                <button class="add-cost-line-button" type="submit">+ Agregar gasto</button>
+              </form>
+              <ul class="cost-line-list" data-cost-list="additional"></ul>
+              <p class="cost-line-empty" data-cost-empty="additional">Aún no has agregado gastos adicionales.</p>
+              <div class="category-subtotal"><span>Subtotal gastos adicionales</span><strong data-subtotal="additional">RD$0</strong></div>
+            </section>
+          </section>
+
+          <section class="production-summary" aria-labelledby="production-total-title" aria-live="polite" aria-atomic="true">
+            <div>
+              <p class="eyebrow section-eyebrow">Resumen de producción</p>
+              <h2 id="production-total-title">Costo total del pastel</h2>
+              <p id="production-summary-detail">Suma de ingredientes, rellenos, coberturas, decoración, empaque, mano de obra y gastos adicionales.</p>
+            </div>
+            <strong class="production-total-amount" id="production-total">RD$0</strong>
+          </section>
+
+          <section class="sales-price-section" aria-labelledby="sales-price-title" aria-live="polite" aria-atomic="true">
+            <div class="sales-price-heading">
+              <div>
+                <p class="eyebrow section-eyebrow">Precio de venta</p>
+                <h2 id="sales-price-title">Define tu ganancia</h2>
+                <p>El precio sugerido suma la ganancia elegida al costo de producción.</p>
+              </div>
+              <div class="profit-control">
+                <label class="field-label" for="profit-percentage">Ganancia sobre el costo</label>
+                <div class="profit-quick-options" role="group" aria-label="Porcentajes rápidos de ganancia">
+                  <button type="button" class="profit-quick-button" data-profit-percentage="30" aria-pressed="false">30%</button>
+                  <button type="button" class="profit-quick-button" data-profit-percentage="50" aria-pressed="false">50%</button>
+                  <button type="button" class="profit-quick-button" data-profit-percentage="100" aria-pressed="false">100%</button>
+                </div>
+                <div class="profit-input-wrap">
+                  <input id="profit-percentage" type="number" min="0" step="any" inputmode="decimal" value="30" aria-describedby="profit-error" />
+                  <span>%</span>
+                </div>
+                <p class="form-message profit-error" id="profit-error" role="alert" aria-live="polite"></p>
+              </div>
+            </div>
+
+            <div class="sales-price-results">
+              <div class="price-result-item">
+                <span>Costo de producción</span>
+                <strong id="sales-production-cost">RD$0</strong>
+              </div>
+              <div class="price-result-item">
+                <span>Ganancia (<span id="applied-profit-percentage">30%</span>)</span>
+                <strong id="suggested-profit">RD$0</strong>
+              </div>
+              <div class="price-result-item price-result-highlight">
+                <span>Precio de venta sugerido</span>
+                <strong id="suggested-sale-price">RD$0</strong>
+              </div>
+              <div class="price-result-item">
+                <span>Margen real sobre la venta</span>
+                <strong id="real-profit-margin">0%</strong>
+              </div>
+            </div>
+          </section>
+        </section>
+      </main>
+
+      <footer class="footer home-section">
+        <span>DulcePrecio</span>
+        <span>Un paso más cerca de un negocio rentable.</span>
+      </footer>
+    </div>
+
+    <dialog class="feature-dialog" id="feature-dialog" aria-labelledby="dialog-title">
+      <form method="dialog">
+        <button class="dialog-close" aria-label="Cerrar">×</button>
+      </form>
+      <span class="dialog-spark" aria-hidden="true">✳</span>
+      <p class="eyebrow">Próximamente</p>
+      <h2 id="dialog-title">Nuevo cálculo</h2>
+      <p class="dialog-description" id="dialog-description">Estamos preparando esta sección para ti.</p>
+      <button class="dialog-done" type="button" id="dialog-done">Entendido</button>
+    </dialog>
+  </body>
+</html>
