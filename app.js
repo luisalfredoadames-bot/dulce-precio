@@ -23,6 +23,8 @@ const HISTORY_STORAGE_KEY = "dulceprecio-history";
 const currencyButtons = document.querySelectorAll("[data-currency]");
 const sampleCost = document.querySelector("#sample-cost");
 const samplePrice = document.querySelector("#sample-price");
+const downloadBackupButton = document.querySelector("#download-backup");
+const backupMessage = document.querySelector("#backup-message");
 const rateForm = document.querySelector("#rate-form");
 const rateInput = document.querySelector("#exchange-rate");
 const rateMessage = document.querySelector("#rate-message");
@@ -1253,6 +1255,43 @@ function returnHome() {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
+function downloadBackup() {
+  let downloadLink;
+  let objectUrl;
+
+  try {
+    const exportedAt = new Date();
+    const backup = {
+      exportedAt: exportedAt.toISOString(),
+      [RECIPES_STORAGE_KEY]: localStorage.getItem(RECIPES_STORAGE_KEY),
+      [INGREDIENTS_STORAGE_KEY]: localStorage.getItem(INGREDIENTS_STORAGE_KEY),
+      [HISTORY_STORAGE_KEY]: localStorage.getItem(HISTORY_STORAGE_KEY),
+      [DRAFT_STORAGE_KEY]: localStorage.getItem(DRAFT_STORAGE_KEY),
+      [CURRENCY_STORAGE_KEY]: localStorage.getItem(CURRENCY_STORAGE_KEY),
+      [RATE_STORAGE_KEY]: localStorage.getItem(RATE_STORAGE_KEY),
+    };
+    const backupBlob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+    objectUrl = URL.createObjectURL(backupBlob);
+    downloadLink = document.createElement("a");
+    downloadLink.href = objectUrl;
+    downloadLink.download = `DulcePrecio-respaldo-${exportedAt.toISOString().replace(/[:.]/g, "-")}.json`;
+    downloadLink.hidden = true;
+    document.body.append(downloadLink);
+    downloadLink.click();
+
+    backupMessage.textContent = "La copia de seguridad se descargó. Los datos guardados no se modificaron.";
+    backupMessage.classList.remove("is-error");
+  } catch {
+    backupMessage.textContent = "No se pudo generar o descargar la copia de seguridad. Los datos guardados no se modificaron; inténtalo de nuevo.";
+    backupMessage.classList.add("is-error");
+  } finally {
+    downloadLink?.remove();
+    if (objectUrl) {
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+    }
+  }
+}
+
 // La preferencia se guarda solo en este navegador; no se usa una cuenta ni una base de datos.
 try {
   const savedCurrency = localStorage.getItem(CURRENCY_STORAGE_KEY);
@@ -1532,6 +1571,7 @@ recipesNewCalculationButton.addEventListener("click", () => openCalculator());
 saveRecipeButton.addEventListener("click", saveRecipe);
 saveHistoryButton.addEventListener("click", saveHistoryRecord);
 inventoryForm.addEventListener("submit", saveInventoryIngredient);
+downloadBackupButton.addEventListener("click", downloadBackup);
 inventoryCancelEditButton.addEventListener("click", () => {
   resetInventoryForm();
 });
