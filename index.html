@@ -9,10 +9,50 @@
     />
     <title>DulcePrecio | Costos claros para tus postres</title>
     <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
     <script src="app.js" defer></script>
   </head>
   <body>
-    <div class="app-shell">
+    <section class="auth-screen" id="auth-screen" aria-labelledby="auth-title">
+      <a class="brand auth-brand" href="#inicio" aria-label="DulcePrecio">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 40 40" fill="none">
+            <path d="M8 27h24l-2.2 7H10.2L8 27Z" fill="currentColor" />
+            <path d="M11 19h18l3 8H8l3-8Z" fill="currentColor" opacity=".72" />
+            <path d="M14 12h12l3 7H11l3-7Z" fill="currentColor" opacity=".46" />
+            <path d="M20 5v7m0-7c-3 0-4 2-4 4 2 0 4-1 4-4Zm0 0c3 0 4 2 4 4-2 0-4-1-4-4Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </span>
+        <span class="brand-name">DulcePrecio</span>
+      </a>
+      <div class="auth-card">
+        <p class="eyebrow section-eyebrow">Tu espacio de trabajo</p>
+        <h1 id="auth-title">Accede a tu cuenta</h1>
+        <p class="auth-status" id="auth-status" role="status" aria-live="polite">Comprobando tu sesión...</p>
+        <div class="auth-forms" id="auth-forms" hidden>
+          <form class="auth-form" id="sign-in-form">
+            <h2>Iniciar sesión</h2>
+            <label class="field-label" for="sign-in-email">Correo electrónico</label>
+            <input class="text-input" id="sign-in-email" name="email" type="email" autocomplete="email" required />
+            <label class="field-label" for="sign-in-password">Contraseña</label>
+            <input class="text-input" id="sign-in-password" name="password" type="password" autocomplete="current-password" required />
+            <button class="dialog-done auth-submit" type="submit">Iniciar sesión</button>
+          </form>
+          <form class="auth-form" id="sign-up-form">
+            <h2>Crear cuenta</h2>
+            <label class="field-label" for="sign-up-name">Nombre</label>
+            <input class="text-input" id="sign-up-name" name="name" type="text" autocomplete="name" required />
+            <label class="field-label" for="sign-up-email">Correo electrónico</label>
+            <input class="text-input" id="sign-up-email" name="email" type="email" autocomplete="email" required />
+            <label class="field-label" for="sign-up-password">Contraseña</label>
+            <input class="text-input" id="sign-up-password" name="password" type="password" autocomplete="new-password" minlength="6" required />
+            <button class="dialog-done auth-submit" type="submit">Crear cuenta</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <div class="app-shell" id="app-shell" hidden>
       <header class="topbar">
         <a class="brand" href="#inicio" aria-label="DulcePrecio, inicio">
           <span class="brand-mark" aria-hidden="true">
@@ -25,7 +65,11 @@
           </span>
           <span class="brand-name">DulcePrecio</span>
         </a>
-        <span class="topbar-note">Tu repostería, en números claros</span>
+        <div class="topbar-account">
+          <span class="topbar-note" id="signed-in-email"></span>
+          <span class="account-message" id="account-message" role="status" aria-live="polite"></span>
+          <button class="sign-out-button" type="button" id="sign-out-button">Cerrar sesión</button>
+        </div>
       </header>
 
       <main id="inicio">

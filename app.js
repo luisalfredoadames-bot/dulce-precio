@@ -14,12 +14,33 @@ const CURRENCIES = {
   },
 };
 
+const SUPABASE_URL = "https://hpdcrbzoxmxeayetonok.supabase.co"; // Pega aquí la URL del proyecto Supabase.
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_aAMYBplr4tVBunXz4Wo5zw_Vyf7r4BS"; // Pega aquí la clave pública Publishable.
+const supabaseClient = window.supabase?.createClient && SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)
+  : null;
+
+if (!window.supabase?.createClient) {
+  console.error("No se cargó Supabase JavaScript Client. Revisa la conexión al CDN.");
+} else if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+  console.info("Configura SUPABASE_URL y SUPABASE_PUBLISHABLE_KEY para inicializar Supabase.");
+}
+
 const CURRENCY_STORAGE_KEY = "dulceprecio-currency";
 const RATE_STORAGE_KEY = "dulceprecio-usd-to-dop-rate";
 const DRAFT_STORAGE_KEY = "dulceprecio-current-calculation";
 const RECIPES_STORAGE_KEY = "dulceprecio-recipes";
 const INGREDIENTS_STORAGE_KEY = "dulceprecio-ingredients";
 const HISTORY_STORAGE_KEY = "dulceprecio-history";
+const appShell = document.querySelector("#app-shell");
+const authScreen = document.querySelector("#auth-screen");
+const authStatus = document.querySelector("#auth-status");
+const authForms = document.querySelector("#auth-forms");
+const signInForm = document.querySelector("#sign-in-form");
+const signUpForm = document.querySelector("#sign-up-form");
+const signOutButton = document.querySelector("#sign-out-button");
+const signedInEmail = document.querySelector("#signed-in-email");
+const accountMessage = document.querySelector("#account-message");
 const currencyButtons = document.querySelectorAll("[data-currency]");
 const sampleCost = document.querySelector("#sample-cost");
 const samplePrice = document.querySelector("#sample-price");
@@ -132,6 +153,14 @@ let historyStorageReady = true;
 let savedIngredients = [];
 let ingredientsStorageReady = true;
 let editingIngredientId = null;
+let currentUserId = null;
+
+function getUserStorageKey(key) {
+  if (!currentUserId) {
+    throw new Error("Se requiere una sesión autenticada para acceder al almacenamiento de usuario.");
+  }
+  return `${key}::${currentUserId}`;
+}
 
 const UNITS = {
   g: { family: "weight", factor: 1, base: "g" },
@@ -653,7 +682,7 @@ function saveInventoryIngredient(event) {
   }
 
   try {
-    localStorage.setItem(INGREDIENTS_STORAGE_KEY, JSON.stringify(nextIngredients));
+    localStorage.setItem(getUserStorageKey(INGREDIENTS_STORAGE_KEY), JSON.stringify(nextIngredients));
     savedIngredients = nextIngredients;
     resetInventoryForm();
     setInventoryMessage(existingIndex >= 0 ? "Ingrediente actualizado." : "Ingrediente guardado.");
@@ -675,7 +704,7 @@ function deleteSavedIngredient(ingredient) {
 
   const nextIngredients = savedIngredients.filter((item) => item.id !== ingredient.id);
   try {
-    localStorage.setItem(INGREDIENTS_STORAGE_KEY, JSON.stringify(nextIngredients));
+    localStorage.setItem(getUserStorageKey(INGREDIENTS_STORAGE_KEY), JSON.stringify(nextIngredients));
     savedIngredients = nextIngredients;
     if (editingIngredientId === ingredient.id) {
       resetInventoryForm();
@@ -771,7 +800,7 @@ function saveHistoryRecord() {
       savedAt: new Date().toISOString(),
     };
     const nextHistory = [...historyRecords, record];
-    localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(nextHistory));
+    localStorage.setItem(getUserStorageKey(HISTORY_STORAGE_KEY), JSON.stringify(nextHistory));
     historyRecords = nextHistory;
     historyStorageMessage.textContent = "";
     setHistorySaveMessage("Cálculo guardado en Historial.", "success");
@@ -796,7 +825,7 @@ function deleteHistoryRecord(record) {
 
   try {
     const nextHistory = historyRecords.filter((item) => item.id !== record.id);
-    localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(nextHistory));
+    localStorage.setItem(getUserStorageKey(HISTORY_STORAGE_KEY), JSON.stringify(nextHistory));
     historyRecords = nextHistory;
     historyStorageMessage.textContent = "";
     renderHistory();
@@ -833,7 +862,7 @@ function resetCalculatorForNewRecipe() {
   nextCostLineId = 1;
   editingRecipeId = null;
   renderCurrency();
-  localStorage.removeItem(DRAFT_STORAGE_KEY);
+  localStorage.removeItem(getUserStorageKey(DRAFT_STORAGE_KEY));
 }
 
 function saveRecipe() {
@@ -867,7 +896,7 @@ function saveRecipe() {
     } else {
       nextRecipes.push(recipe);
     }
-    localStorage.setItem(RECIPES_STORAGE_KEY, JSON.stringify(nextRecipes));
+    localStorage.setItem(getUserStorageKey(RECIPES_STORAGE_KEY), JSON.stringify(nextRecipes));
     recipeWasPersisted = true;
     recipes = nextRecipes;
     recipeStorageMessage.textContent = "";
@@ -928,7 +957,7 @@ function deleteRecipe(recipe) {
 
   try {
     const nextRecipes = recipes.filter((item) => item.id !== recipe.id);
-    localStorage.setItem(RECIPES_STORAGE_KEY, JSON.stringify(nextRecipes));
+    localStorage.setItem(getUserStorageKey(RECIPES_STORAGE_KEY), JSON.stringify(nextRecipes));
     recipes = nextRecipes;
     if (editingRecipeId === recipe.id) {
       editingRecipeId = null;
@@ -959,7 +988,7 @@ function saveDraft() {
   }));
 
   try {
-    localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({
+    localStorage.setItem(getUserStorageKey(DRAFT_STORAGE_KEY), JSON.stringify({
       cakeName: cakeNameInput.value,
       selectedCurrency,
       calculationCurrency,
@@ -979,7 +1008,7 @@ function saveDraft() {
 }
 
 function restoreDraft() {
-  const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
+  const savedDraft = localStorage.getItem(getUserStorageKey(DRAFT_STORAGE_KEY));
   if (!savedDraft) {
     return;
   }
@@ -1263,12 +1292,12 @@ function downloadBackup() {
     const exportedAt = new Date();
     const backup = {
       exportedAt: exportedAt.toISOString(),
-      [RECIPES_STORAGE_KEY]: localStorage.getItem(RECIPES_STORAGE_KEY),
-      [INGREDIENTS_STORAGE_KEY]: localStorage.getItem(INGREDIENTS_STORAGE_KEY),
-      [HISTORY_STORAGE_KEY]: localStorage.getItem(HISTORY_STORAGE_KEY),
-      [DRAFT_STORAGE_KEY]: localStorage.getItem(DRAFT_STORAGE_KEY),
-      [CURRENCY_STORAGE_KEY]: localStorage.getItem(CURRENCY_STORAGE_KEY),
-      [RATE_STORAGE_KEY]: localStorage.getItem(RATE_STORAGE_KEY),
+      [RECIPES_STORAGE_KEY]: localStorage.getItem(getUserStorageKey(RECIPES_STORAGE_KEY)),
+      [INGREDIENTS_STORAGE_KEY]: localStorage.getItem(getUserStorageKey(INGREDIENTS_STORAGE_KEY)),
+      [HISTORY_STORAGE_KEY]: localStorage.getItem(getUserStorageKey(HISTORY_STORAGE_KEY)),
+      [DRAFT_STORAGE_KEY]: localStorage.getItem(getUserStorageKey(DRAFT_STORAGE_KEY)),
+      [CURRENCY_STORAGE_KEY]: localStorage.getItem(getUserStorageKey(CURRENCY_STORAGE_KEY)),
+      [RATE_STORAGE_KEY]: localStorage.getItem(getUserStorageKey(RATE_STORAGE_KEY)),
     };
     const backupBlob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
     objectUrl = URL.createObjectURL(backupBlob);
@@ -1292,74 +1321,174 @@ function downloadBackup() {
   }
 }
 
-// La preferencia se guarda solo en este navegador; no se usa una cuenta ni una base de datos.
-try {
-  const savedCurrency = localStorage.getItem(CURRENCY_STORAGE_KEY);
-  if (savedCurrency && CURRENCIES[savedCurrency]) {
-    selectedCurrency = savedCurrency;
+function loadUserData() {
+  try {
+    const savedCurrency = localStorage.getItem(getUserStorageKey(CURRENCY_STORAGE_KEY));
+    if (savedCurrency && CURRENCIES[savedCurrency]) {
+      selectedCurrency = savedCurrency;
+    }
+
+    const savedRate = localStorage.getItem(getUserStorageKey(RATE_STORAGE_KEY));
+    if (savedRate && Number(savedRate) > 0) {
+      rateInput.value = savedRate;
+      rateMessage.textContent = "Tasa guardada en este navegador. No se aplican conversiones.";
+    }
+
+    restoreDraft();
+  } catch {
+    // La pantalla sigue funcionando aunque el navegador bloquee el almacenamiento local.
   }
 
-  const savedRate = localStorage.getItem(RATE_STORAGE_KEY);
-  if (savedRate && Number(savedRate) > 0) {
-    rateInput.value = savedRate;
-    rateMessage.textContent = "Tasa guardada en este navegador. No se aplican conversiones.";
+  try {
+    const savedRecipes = localStorage.getItem(getUserStorageKey(RECIPES_STORAGE_KEY));
+    if (savedRecipes) {
+      const parsedRecipes = JSON.parse(savedRecipes);
+      if (!Array.isArray(parsedRecipes)) {
+        throw new Error("El contenido guardado no tiene el formato esperado.");
+      }
+      recipes = parsedRecipes;
+    }
+  } catch {
+    recipesStorageReady = false;
+    recipeStorageMessage.textContent = "No se pudieron leer las recetas guardadas. No guardes recetas nuevas hasta recuperar el almacenamiento para evitar sobrescribir los datos existentes.";
   }
 
-  restoreDraft();
-} catch {
-  // La pantalla sigue funcionando aunque el navegador bloquee el almacenamiento local.
+  try {
+    const savedHistory = localStorage.getItem(getUserStorageKey(HISTORY_STORAGE_KEY));
+    if (savedHistory) {
+      const parsedHistory = JSON.parse(savedHistory);
+      if (!Array.isArray(parsedHistory)) {
+        throw new Error("El contenido guardado no tiene el formato esperado.");
+      }
+      historyRecords = parsedHistory;
+      if (!historyRecords.every(isHistoryRecord)) {
+        historyStorageReady = false;
+        historyStorageMessage.textContent = "Hay datos de Historial que no se pudieron validar. No se guardarán ni eliminarán registros para evitar perder información.";
+      }
+    }
+  } catch {
+    historyStorageReady = false;
+    historyStorageMessage.textContent = "No se pudo leer el Historial guardado. No se guardarán ni eliminarán registros para evitar sobrescribir tus datos existentes.";
+  }
+
+  try {
+    const savedInventory = localStorage.getItem(getUserStorageKey(INGREDIENTS_STORAGE_KEY));
+    if (savedInventory) {
+      const parsedInventory = JSON.parse(savedInventory);
+      if (!Array.isArray(parsedInventory)) {
+        throw new Error("El inventario guardado no tiene el formato esperado.");
+      }
+      savedIngredients = parsedInventory;
+    }
+  } catch {
+    ingredientsStorageReady = false;
+    inventoryStorageMessage.textContent = "No se pudo leer el inventario guardado. No intentes guardar ni eliminar ingredientes para evitar sobrescribir los datos existentes.";
+  }
+
+  renderCurrency();
+  renderRecipes();
+  renderHistory();
+  renderIngredientsInventory();
 }
 
-try {
-  const savedRecipes = localStorage.getItem(RECIPES_STORAGE_KEY);
-  if (savedRecipes) {
-    const parsedRecipes = JSON.parse(savedRecipes);
-    if (!Array.isArray(parsedRecipes)) {
-      throw new Error("El contenido guardado no tiene el formato esperado.");
-    }
-    recipes = parsedRecipes;
-  }
-} catch {
-  recipesStorageReady = false;
-  recipeStorageMessage.textContent = "No se pudieron leer las recetas guardadas. No guardes recetas nuevas hasta recuperar el almacenamiento para evitar sobrescribir los datos existentes.";
+function clearUserDataFromMemory() {
+  currentUserId = null;
+  selectedCurrency = "DOP";
+  calculationCurrency = null;
+  ingredients = [];
+  costLines = Object.fromEntries(COST_CATEGORY_KEYS.map((category) => [category, []]));
+  recipes = [];
+  editingRecipeId = null;
+  recipesStorageReady = true;
+  historyRecords = [];
+  historyStorageReady = true;
+  savedIngredients = [];
+  ingredientsStorageReady = true;
+  editingIngredientId = null;
+  nextIngredientId = 1;
+  nextCostLineId = 1;
+
+  appShell.querySelectorAll("form").forEach((form) => form.reset());
+  cakeNameInput.value = "";
+  laborHoursInput.value = "";
+  laborHourlyRateInput.value = "";
+  laborPercentageInput.value = "";
+  profitPercentageInput.value = "30";
+  cakeNameDisplay.textContent = "Tu pastel";
+  recipeStorageMessage.textContent = "";
+  recipeSaveMessage.textContent = "";
+  historyStorageMessage.textContent = "";
+  historySaveMessage.textContent = "";
+  inventoryStorageMessage.textContent = "";
+  inventoryMessage.textContent = "";
+  rateMessage.textContent = "Sin tasa configurada. No se aplican conversiones.";
+  returnHome();
+  renderCurrency();
+  renderCalculator();
+  renderRecipes();
+  renderHistory();
+  renderIngredientsInventory();
 }
 
-try {
-  const savedHistory = localStorage.getItem(HISTORY_STORAGE_KEY);
-  if (savedHistory) {
-    const parsedHistory = JSON.parse(savedHistory);
-    if (!Array.isArray(parsedHistory)) {
-      throw new Error("El contenido guardado no tiene el formato esperado.");
-    }
-    historyRecords = parsedHistory;
-    if (!historyRecords.every(isHistoryRecord)) {
-      historyStorageReady = false;
-      historyStorageMessage.textContent = "Hay datos de Historial que no se pudieron validar. No se guardarán ni eliminarán registros para evitar perder información.";
-    }
-  }
-} catch {
-  historyStorageReady = false;
-  historyStorageMessage.textContent = "No se pudo leer el Historial guardado. No se guardarán ni eliminarán registros para evitar sobrescribir tus datos existentes.";
+function setAuthStatus(message, isError = false) {
+  authStatus.textContent = message;
+  authStatus.classList.toggle("is-error", isError);
 }
 
-try {
-  const savedInventory = localStorage.getItem(INGREDIENTS_STORAGE_KEY);
-  if (savedInventory) {
-    const parsedInventory = JSON.parse(savedInventory);
-    if (!Array.isArray(parsedInventory)) {
-      throw new Error("El inventario guardado no tiene el formato esperado.");
-    }
-    savedIngredients = parsedInventory;
-  }
-} catch {
-  ingredientsStorageReady = false;
-  inventoryStorageMessage.textContent = "No se pudo leer el inventario guardado. No intentes guardar ni eliminar ingredientes para evitar sobrescribir los datos existentes.";
+function showSignedOutState(message = "Inicia sesión o crea una cuenta para continuar.", isError = false) {
+  appShell.hidden = true;
+  authScreen.hidden = false;
+  authForms.hidden = false;
+  signedInEmail.textContent = "";
+  clearUserDataFromMemory();
+  setAuthStatus(message, isError);
 }
 
-renderCurrency();
-renderRecipes();
-renderHistory();
-renderIngredientsInventory();
+function showSignedInState(user) {
+  if (!user || typeof user.id !== "string") {
+    showSignedOutState();
+    return;
+  }
+
+  if (currentUserId === user.id && !appShell.hidden) {
+    return;
+  }
+
+  appShell.hidden = true;
+  clearUserDataFromMemory();
+  currentUserId = user.id;
+  loadUserData();
+  signedInEmail.textContent = user.email || "";
+  authScreen.hidden = true;
+  appShell.hidden = false;
+  accountMessage.textContent = "";
+}
+
+async function initializeAuth() {
+  if (!supabaseClient) {
+    showSignedOutState("No se pudo inicializar Supabase. Revisa la conexión y la configuración del cliente.");
+    return;
+  }
+
+  const { data, error } = await supabaseClient.auth.getSession();
+  if (error) {
+    showSignedOutState(`No se pudo comprobar la sesión: ${error.message}`, true);
+  } else {
+    showSignedOutState();
+    if (data.session) {
+      showSignedInState(data.session.user);
+    }
+  }
+
+  const { data: authListener } = supabaseClient.auth.onAuthStateChange((_event, session) => {
+    if (session) {
+      showSignedInState(session.user);
+    } else {
+      showSignedOutState();
+    }
+  });
+  window.addEventListener("pagehide", () => authListener.subscription.unsubscribe(), { once: true });
+}
 
 currencyButtons.forEach((button) => {
   button.addEventListener("click", () => {
@@ -1370,7 +1499,7 @@ currencyButtons.forEach((button) => {
     renderCurrency();
 
     try {
-      localStorage.setItem(CURRENCY_STORAGE_KEY, selectedCurrency);
+      localStorage.setItem(getUserStorageKey(CURRENCY_STORAGE_KEY), selectedCurrency);
     } catch {
       // La selección actual sigue activa aunque no se pueda guardar para la próxima visita.
     }
@@ -1389,7 +1518,7 @@ calculatorCurrencyButtons.forEach((button) => {
     renderCurrency();
 
     try {
-      localStorage.setItem(CURRENCY_STORAGE_KEY, selectedCurrency);
+      localStorage.setItem(getUserStorageKey(CURRENCY_STORAGE_KEY), selectedCurrency);
     } catch {
       // La moneda elegida sigue activa aunque no se pueda guardar para otra visita.
     }
@@ -1587,12 +1716,106 @@ rateForm.addEventListener("submit", (event) => {
   }
 
   try {
-    localStorage.setItem(RATE_STORAGE_KEY, String(rate));
+    localStorage.setItem(getUserStorageKey(RATE_STORAGE_KEY), String(rate));
     rateMessage.textContent = "Tasa guardada en este navegador. No se aplican conversiones.";
     rateMessage.classList.remove("is-error");
   } catch {
     rateMessage.textContent = "No se pudo guardar la tasa en este navegador.";
     rateMessage.classList.add("is-error");
+  }
+});
+
+signInForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!supabaseClient) {
+    setAuthStatus("La conexión con Supabase no está disponible.", true);
+    return;
+  }
+
+  const submitButton = signInForm.querySelector("button[type='submit']");
+  submitButton.disabled = true;
+  setAuthStatus("Iniciando sesión...");
+  try {
+    const formData = new FormData(signInForm);
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+      email: String(formData.get("email")).trim(),
+      password: String(formData.get("password")),
+    });
+    if (error) {
+      throw error;
+    }
+    if (!data.session) {
+      setAuthStatus("No se recibió una sesión válida. Verifica tu cuenta y vuelve a intentarlo.", true);
+      return;
+    }
+    showSignedInState(data.session.user);
+  } catch (error) {
+    setAuthStatus(`No se pudo iniciar sesión: ${error.message || "Error inesperado."}`, true);
+  } finally {
+    submitButton.disabled = false;
+  }
+});
+
+signUpForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!supabaseClient) {
+    setAuthStatus("La conexión con Supabase no está disponible.", true);
+    return;
+  }
+
+  const submitButton = signUpForm.querySelector("button[type='submit']");
+  submitButton.disabled = true;
+  setAuthStatus("Creando tu cuenta...");
+  try {
+    const formData = new FormData(signUpForm);
+    const name = String(formData.get("name")).trim();
+    const email = String(formData.get("email")).trim();
+    const password = String(formData.get("password"));
+    if (!name) {
+      setAuthStatus("Escribe tu nombre para crear la cuenta.", true);
+      return;
+    }
+
+    const { data, error } = await supabaseClient.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: name } },
+    });
+    if (error) {
+      throw error;
+    }
+    if (data.session) {
+      showSignedInState(data.session.user);
+      return;
+    }
+
+    signInForm.elements.namedItem("email").value = email;
+    setAuthStatus("Cuenta creada. Confirma tu correo usando el enlace que te enviamos; después inicia sesión.");
+  } catch (error) {
+    setAuthStatus(`No se pudo crear la cuenta: ${error.message || "Error inesperado."}`, true);
+  } finally {
+    submitButton.disabled = false;
+  }
+});
+
+signOutButton.addEventListener("click", async () => {
+  if (!supabaseClient) {
+    accountMessage.textContent = "La conexión con Supabase no está disponible.";
+    return;
+  }
+
+  signOutButton.disabled = true;
+  accountMessage.textContent = "";
+  try {
+    const { error } = await supabaseClient.auth.signOut();
+    if (error) {
+      throw error;
+    }
+    showSignedOutState();
+  } catch (error) {
+    accountMessage.textContent = `No se pudo cerrar sesión: ${error.message || "Error inesperado."}`;
+  } finally {
+    signOutButton.disabled = false;
   }
 });
 
@@ -1647,4 +1870,8 @@ document.querySelectorAll("[data-feature]").forEach((button) => {
 
 document.querySelector("#dialog-done").addEventListener("click", () => {
   featureDialog.close();
+});
+
+initializeAuth().catch((error) => {
+  showSignedOutState(`No se pudo inicializar la autenticación: ${error.message || "Error inesperado."}`, true);
 });
